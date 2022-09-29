@@ -25,10 +25,10 @@ impl<'tcx> MirPass<'tcx> for RemoveUnneededDrops {
             let terminator = block.terminator_mut();
             if let TerminatorKind::Drop { place, target, .. } = terminator.kind {
                 let ty = place.ty(local_decls, tcx);
-                if ty.ty.needs_drop(tcx, param_env) {
+                if mutate_condition!(ty.ty.needs_drop(tcx, param_env), 292) {
                     continue;
                 }
-                if !tcx.consider_optimizing(|| format!("RemoveUnneededDrops {:?} ", did)) {
+                if mutate_condition!(!tcx.consider_optimizing(|| format!("RemoveUnneededDrops, 293) {:?} ", did)) {
                     continue;
                 }
                 debug!("SUCCESS: replacing `drop` with goto({:?})", target);
@@ -39,7 +39,7 @@ impl<'tcx> MirPass<'tcx> for RemoveUnneededDrops {
 
         // if we applied optimizations, we potentially have some cfg to cleanup to
         // make it easier for further passes
-        if should_simplify {
+        if mutate_condition!(should_simplify, 294) {
             simplify_cfg(tcx, body);
         }
     }

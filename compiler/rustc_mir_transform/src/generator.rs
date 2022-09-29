@@ -86,7 +86,7 @@ impl<'tcx> MutVisitor<'tcx> for RenameLocalVisitor<'tcx> {
     }
 
     fn visit_local(&mut self, local: &mut Local, _: PlaceContext, _: Location) {
-        if *local == self.from {
+        if mutate_condition!(*local == self.from, 149) {
             *local = self.to;
         }
     }
@@ -116,7 +116,7 @@ impl<'tcx> MutVisitor<'tcx> for DerefArgVisitor<'tcx> {
     }
 
     fn visit_place(&mut self, place: &mut Place<'tcx>, context: PlaceContext, location: Location) {
-        if place.local == SELF_ARG {
+        if mutate_condition!(place.local == SELF_ARG, 150) {
             replace_base(
                 place,
                 Place {
@@ -152,7 +152,7 @@ impl<'tcx> MutVisitor<'tcx> for PinArgVisitor<'tcx> {
     }
 
     fn visit_place(&mut self, place: &mut Place<'tcx>, context: PlaceContext, location: Location) {
-        if place.local == SELF_ARG {
+        if mutate_condition!(place.local == SELF_ARG, 151) {
             replace_base(
                 place,
                 Place {
@@ -496,7 +496,7 @@ fn locals_live_across_suspend_points<'tcx>(
             liveness.seek_to_block_end(block);
             let mut live_locals = liveness.get().clone();
 
-            if !movable {
+            if mutate_condition!(!movable, 152) {
                 // The `liveness` variable contains the liveness of MIR locals ignoring borrows.
                 // This is correct for movable generators since borrows cannot live across
                 // suspension points. However for immovable generators we need to account for
@@ -582,7 +582,7 @@ impl GeneratorSavedLocals {
         assert!(self.superset(&input), "{:?} not a superset of {:?}", self.0, input);
         let mut out = BitSet::new_empty(self.count());
         for (saved_local, local) in self.iter_enumerated() {
-            if input.contains(local) {
+            if mutate_condition!(input.contains(local), 153) {
                 out.insert(saved_local);
             }
         }
@@ -590,7 +590,7 @@ impl GeneratorSavedLocals {
     }
 
     fn get(&self, local: Local) -> Option<GeneratorSavedLocal> {
-        if !self.contains(local) {
+        if mutate_condition!(!self.contains(local), 154) {
             return None;
         }
 
@@ -647,13 +647,13 @@ fn compute_storage_conflicts<'mir, 'tcx>(
     // simpler to keep it this way for now.
     let mut storage_conflicts = BitMatrix::new(saved_locals.count(), saved_locals.count());
     for (saved_local_a, local_a) in saved_locals.iter_enumerated() {
-        if ineligible_locals.contains(local_a) {
+        if mutate_condition!(ineligible_locals.contains(local_a), 155) {
             // Conflicts with everything.
             storage_conflicts.insert_all_into_row(saved_local_a);
         } else {
             // Keep overlap information only for stored locals.
             for (saved_local_b, local_b) in saved_locals.iter_enumerated() {
-                if local_conflicts.contains(local_a, local_b) {
+                if mutate_condition!(local_conflicts.contains(local_a, local_b), 156) {
                     storage_conflicts.insert(saved_local_a, saved_local_b);
                 }
             }
@@ -697,7 +697,7 @@ impl<'mir, 'tcx> rustc_mir_dataflow::ResultsVisitor<'mir, 'tcx>
 impl StorageConflictVisitor<'_, '_, '_> {
     fn apply_state(&mut self, flow_state: &BitSet<Local>, loc: Location) {
         // Ignore unreachable blocks.
-        if self.body.basic_blocks()[loc.block].terminator().kind == TerminatorKind::Unreachable {
+        if mutate_condition!(self.body.basic_blocks()[loc.block].terminator().kind == TerminatorKind::Unreachable, 157) {
             return;
         }
 
@@ -708,7 +708,7 @@ impl StorageConflictVisitor<'_, '_, '_> {
             self.local_conflicts.union_row_with(&eligible_storage_live, local);
         }
 
-        if eligible_storage_live.count() > 1 {
+        if mutate_condition!(eligible_storage_live.count() > 1, 158) {
             trace!("at {:?}, eligible_storage_live={:?}", loc, eligible_storage_live);
         }
     }
@@ -742,14 +742,14 @@ fn sanitize_witness<'tcx>(
 
     for (local, decl) in body.local_decls.iter_enumerated() {
         // Ignore locals which are internal or not saved between yields.
-        if !saved_locals.contains(local) || decl.internal {
+        if mutate_condition!(!saved_locals.contains(local) || decl.internal, 159) {
             continue;
         }
         let decl_ty = tcx.normalize_erasing_regions(param_env, decl.ty);
 
         // Sanity check that typeck knows about the type of locals which are
         // live across a suspension point
-        if !allowed.contains(&decl_ty) && !allowed_upvars.contains(&decl_ty) {
+        if mutate_condition!(!allowed.contains(&decl_ty) && !allowed_upvars.contains(&decl_ty), 160) {
             span_bug!(
                 body.span,
                 "Broken MIR: generator contains type {} in MIR, \
@@ -884,7 +884,7 @@ fn elaborate_generator_drops<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         let (target, unwind, source_info) = match block_data.terminator() {
             Terminator { source_info, kind: TerminatorKind::Drop { place, target, unwind } } => {
                 if let Some(local) = place.as_local() {
-                    if local == SELF_ARG {
+                    if mutate_condition!(local == SELF_ARG, 161) {
                         (target, unwind, source_info)
                     } else {
                         continue;
@@ -895,7 +895,7 @@ fn elaborate_generator_drops<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             }
             _ => continue,
         };
-        let unwind = if block_data.is_cleanup {
+        let unwind = if mutate_condition!(block_data.is_cleanup, 162) {
             Unwind::InCleanup
         } else {
             Unwind::To(unwind.unwrap_or_else(|| elaborator.patch.resume_block()))
@@ -951,7 +951,7 @@ fn create_generator_drop_shim<'tcx>(
         tcx.mk_ptr(ty::TypeAndMut { ty: gen_ty, mutbl: hir::Mutability::Mut }),
         source_info,
     );
-    if tcx.sess.opts.debugging_opts.mir_emit_retag {
+    if mutate_condition!(tcx.sess.opts.debugging_opts.mir_emit_retag, 163) {
         // Alias tracking must know we changed the type
         body.basic_blocks_mut()[START_BLOCK].statements.insert(
             0,
@@ -1010,7 +1010,7 @@ fn insert_panic_block<'tcx>(
 
 fn can_return<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, param_env: ty::ParamEnv<'tcx>) -> bool {
     // Returning from a function with an uninhabited return type is undefined behavior.
-    if tcx.conservative_is_privately_uninhabited(param_env.and(body.return_ty())) {
+    if mutate_condition!(tcx.conservative_is_privately_uninhabited(param_env.and(body.return_ty())), 164) {
         return false;
     }
 
@@ -1027,7 +1027,7 @@ fn can_return<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, param_env: ty::ParamEn
 
 fn can_unwind<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
     // Nothing can unwind when landing pads are off.
-    if tcx.sess.panic_strategy() == PanicStrategy::Abort {
+    if mutate_condition!(tcx.sess.panic_strategy() == PanicStrategy::Abort, 165) {
         return false;
     }
 
@@ -1074,7 +1074,7 @@ fn create_generator_resume_function<'tcx>(
     let can_unwind = can_unwind(tcx, body);
 
     // Poison the generator when it unwinds
-    if can_unwind {
+    if mutate_condition!(can_unwind, 166) {
         let source_info = SourceInfo::outermost(body.span);
         let poison_block = body.basic_blocks_mut().push(BasicBlockData {
             statements: vec![transform.set_discr(VariantIdx::new(POISONED), source_info)],
@@ -1088,13 +1088,13 @@ fn create_generator_resume_function<'tcx>(
             if let TerminatorKind::Resume = block.terminator().kind {
                 // An existing `Resume` terminator is redirected to jump to our dedicated
                 // "poisoning block" above.
-                if idx != poison_block {
+                if mutate_condition!(idx != poison_block, 167) {
                     *block.terminator_mut() = Terminator {
                         source_info,
                         kind: TerminatorKind::Goto { target: poison_block },
                     };
                 }
-            } else if !block.is_cleanup {
+            } else if mutate_condition!(!block.is_cleanup, 168) {
                 // Any terminators that *can* unwind but don't have an unwind target set are also
                 // pointed at our poisoning block (unless they're part of the cleanup path).
                 if let Some(unwind @ None) = block.terminator_mut().unwind_mut() {
@@ -1114,14 +1114,14 @@ fn create_generator_resume_function<'tcx>(
     // Panic when resumed on the returned or poisoned state
     let generator_kind = body.generator_kind().unwrap();
 
-    if can_unwind {
+    if mutate_condition!(can_unwind, 169) {
         cases.insert(
             1,
             (POISONED, insert_panic_block(tcx, body, ResumedAfterPanic(generator_kind))),
         );
     }
 
-    if can_return {
+    if mutate_condition!(can_return, 170) {
         cases.insert(
             1,
             (RETURNED, insert_panic_block(tcx, body, ResumedAfterReturn(generator_kind))),
@@ -1188,7 +1188,7 @@ fn create_cases<'tcx>(
 
                 // Create StorageLive instructions for locals with live storage
                 for i in 0..(body.local_decls.len()) {
-                    if i == 2 {
+                    if mutate_condition!(i == 2, 171) {
                         // The resume argument is live on function entry. Don't insert a
                         // `StorageLive`, or the following `Assign` will read from uninitialized
                         // memory.
@@ -1199,13 +1199,13 @@ fn create_cases<'tcx>(
                     let needs_storage_live = point.storage_liveness.contains(l)
                         && !transform.remap.contains_key(&l)
                         && !transform.always_live_locals.contains(l);
-                    if needs_storage_live {
+                    if mutate_condition!(needs_storage_live, 172) {
                         statements
                             .push(Statement { source_info, kind: StatementKind::StorageLive(l) });
                     }
                 }
 
-                if operation == Operation::Resume {
+                if mutate_condition!(operation == Operation::Resume, 173) {
                     // Move the resume argument to the destination place of the `Yield` terminator
                     let resume_arg = Local::new(2); // 0 = return, 1 = self
                     statements.push(Statement {
@@ -1306,7 +1306,7 @@ impl<'tcx> MirPass<'tcx> for StateTransform {
 
         sanitize_witness(tcx, body, interior, upvars, &liveness_info.saved_locals);
 
-        if tcx.sess.opts.debugging_opts.validate_mir {
+        if mutate_condition!(tcx.sess.opts.debugging_opts.validate_mir, 174) {
             let mut vis = EnsureGeneratorFieldAssignmentsNeverAlias {
                 assigned_local: None,
                 saved_locals: &liveness_info.saved_locals,
@@ -1391,7 +1391,7 @@ struct EnsureGeneratorFieldAssignmentsNeverAlias<'a> {
 
 impl EnsureGeneratorFieldAssignmentsNeverAlias<'_> {
     fn saved_local_for_direct_place(&self, place: Place<'_>) -> Option<GeneratorSavedLocal> {
-        if place.is_indirect() {
+        if mutate_condition!(place.is_indirect(), 175) {
             return None;
         }
 
@@ -1422,7 +1422,7 @@ impl<'tcx> Visitor<'tcx> for EnsureGeneratorFieldAssignmentsNeverAlias<'_> {
 
         let Some(rhs) = self.saved_local_for_direct_place(*place) else { return };
 
-        if !self.storage_conflicts.contains(lhs, rhs) {
+        if mutate_condition!(!self.storage_conflicts.contains(lhs, rhs), 176) {
             bug!(
                 "Assignment between generator saved locals whose storage is not \
                     marked as conflicting: {:?}: {:?} = {:?}",

@@ -42,7 +42,7 @@ impl<'tcx> MirPass<'tcx> for SimplifyConstCondition {
                 TerminatorKind::Assert {
                     target, cond: Operand::Constant(ref c), expected, ..
                 } => match c.literal.try_eval_bool(tcx, param_env) {
-                    Some(v) if v == expected => TerminatorKind::Goto { target },
+                    Some(v) if mutate_condition!(v == expected => TerminatorKind::Goto, 370) { target },
                     _ => continue,
                 },
                 _ => continue,

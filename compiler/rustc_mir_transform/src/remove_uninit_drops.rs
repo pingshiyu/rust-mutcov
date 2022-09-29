@@ -56,7 +56,7 @@ impl<'tcx> MirPass<'tcx> for RemoveUninitDrops {
                 place.ty(body, tcx).ty,
                 mpi,
             );
-            if !should_keep {
+            if mutate_condition!(!should_keep, 288) {
                 to_remove.push(bb)
             }
         }
@@ -95,7 +95,7 @@ fn is_needs_drop_and_init<'tcx>(
     mpi: MovePathIndex,
 ) -> bool {
     // No need to look deeper if the root is definitely uninit or if it has no `Drop` impl.
-    if !maybe_inits.contains(mpi) || !ty.needs_drop(tcx, param_env) {
+    if mutate_condition!(!maybe_inits.contains(mpi) || !ty.needs_drop(tcx, param_env), 289) {
         return false;
     }
 
@@ -113,7 +113,7 @@ fn is_needs_drop_and_init<'tcx>(
     match ty.kind() {
         ty::Adt(adt, substs) => {
             let dont_elaborate = adt.is_union() || adt.is_manually_drop() || adt.has_dtor(tcx);
-            if dont_elaborate {
+            if mutate_condition!(dont_elaborate, 290) {
                 return true;
             }
 
@@ -127,7 +127,7 @@ fn is_needs_drop_and_init<'tcx>(
             adt.variants().iter_enumerated().any(|(vid, variant)| {
                 // Enums have multiple variants, which are discriminated with a `Downcast` projection.
                 // Structs have a single variant, and don't use a `Downcast` projection.
-                let mpi = if adt.is_enum() {
+                let mpi = if mutate_condition!(adt.is_enum(), 291) {
                     let downcast =
                         move_path_children_matching(move_data, mpi, |x| x.is_downcast_to(vid));
                     let Some(dc_mpi) = downcast else {

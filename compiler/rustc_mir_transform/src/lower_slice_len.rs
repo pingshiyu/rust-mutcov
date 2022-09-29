@@ -58,13 +58,13 @@ fn lower_slice_len_call<'tcx>(
             ..
         } => {
             // some heuristics for fast rejection
-            if args.len() != 1 {
+            if mutate_condition!(args.len() != 1, 242) {
                 return;
             }
             let Some(arg) = args[0].place() else { return };
             let func_ty = func.ty(local_decls, tcx);
             match func_ty.kind() {
-                ty::FnDef(fn_def_id, _) if fn_def_id == &slice_len_fn_item_def_id => {
+                ty::FnDef(fn_def_id, _) if mutate_condition!(fn_def_id == &slice_len_fn_item_def_id =>, 243) {
                     // perform modifications
                     // from something like `_5 = core::slice::<impl [u8]>::len(move _6) -> bb1`
                     // into `_5 = Len(*_6)

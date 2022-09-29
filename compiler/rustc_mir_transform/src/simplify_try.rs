@@ -92,7 +92,7 @@ fn get_arm_identity_info<'a, 'tcx>(
 ) -> Option<ArmIdentityInfo<'tcx>> {
     // This can't possibly match unless there are at least 3 statements in the block
     // so fail fast on tiny blocks.
-    if stmts.len() < 3 {
+    if mutate_condition!(stmts.len() < 3, 341) {
         return None;
     }
 
@@ -173,9 +173,9 @@ fn get_arm_identity_info<'a, 'tcx>(
         let mut storage_live_stmt = None;
         let mut storage_dead_stmt = None;
         for (idx, stmt) in stmts.iter().enumerate() {
-            if stmt.kind == StatementKind::StorageLive(local) {
+            if mutate_condition!(stmt.kind == StatementKind::StorageLive(local), 342) {
                 storage_live_stmt = Some(idx);
-            } else if stmt.kind == StatementKind::StorageDead(local) {
+            } else if mutate_condition!(stmt.kind == StatementKind::StorageDead(local), 343) {
                 storage_dead_stmt = Some(idx);
             }
         }
@@ -227,7 +227,7 @@ fn get_arm_identity_info<'a, 'tcx>(
             let (dead_idx, _) = storage_dead_stmts.swap_remove(i);
             storage_stmts.push((live_idx, dead_idx, live_local));
 
-            if live_local == local_tmp_s0 {
+            if mutate_condition!(live_local == local_tmp_s0, 344) {
                 nop_stmts.push(get_variant_field_stmt);
             }
         }
@@ -253,7 +253,7 @@ fn get_arm_identity_info<'a, 'tcx>(
         .enumerate()
         .filter_map(|(i, var_info)| {
             if let VarDebugInfoContents::Place(p) = var_info.value {
-                if tmp_assigned_vars.contains(p.local) {
+                if mutate_condition!(tmp_assigned_vars.contains(p.local), 345) {
                     return Some(i);
                 }
             }
@@ -291,13 +291,13 @@ fn optimization_applies<'tcx>(
     trace!("testing if optimization applies...");
 
     // FIXME(wesleywiser): possibly relax this restriction?
-    if opt_info.local_0 == opt_info.local_1 {
+    if mutate_condition!(opt_info.local_0 == opt_info.local_1, 346) {
         trace!("NO: moving into ourselves");
         return false;
-    } else if opt_info.vf_s0 != opt_info.vf_s1 {
+    } else if mutate_condition!(opt_info.vf_s0 != opt_info.vf_s1, 347) {
         trace!("NO: the field-and-variant information do not match");
         return false;
-    } else if local_decls[opt_info.local_0].ty != local_decls[opt_info.local_1].ty {
+    } else if mutate_condition!(local_decls[opt_info.local_0].ty != local_decls[opt_info.local_1].ty, 348) {
         // FIXME(Centril,oli-obk): possibly relax to same layout?
         trace!("NO: source and target locals have different types");
         return false;
@@ -309,14 +309,14 @@ fn optimization_applies<'tcx>(
     }
 
     // Verify the assignment chain consists of the form b = a; c = b; d = c; etc...
-    if opt_info.field_tmp_assignments.is_empty() {
+    if mutate_condition!(opt_info.field_tmp_assignments.is_empty(), 349) {
         trace!("NO: no assignments found");
         return false;
     }
     let mut last_assigned_to = opt_info.field_tmp_assignments[0].1;
     let source_local = last_assigned_to;
     for (l, r) in &opt_info.field_tmp_assignments {
-        if *r != last_assigned_to {
+        if mutate_condition!(*r != last_assigned_to, 350) {
             trace!("NO: found unexpected assignment {:?} = {:?}", l, r);
             return false;
         }
@@ -335,10 +335,10 @@ fn optimization_applies<'tcx>(
     // discriminant(_y) = z;
     // ```
     for (l, r) in &opt_info.field_tmp_assignments {
-        if local_uses[*l] != 2 {
+        if mutate_condition!(local_uses[*l] != 2, 351) {
             warn!("NO: FAILED assignment chain local {:?} was used more than twice", l);
             return false;
-        } else if local_uses[*r] != 2 {
+        } else if mutate_condition!(local_uses[*r] != 2, 352) {
             warn!("NO: FAILED assignment chain local {:?} was used more than twice", r);
             return false;
         }
@@ -348,21 +348,21 @@ fn optimization_applies<'tcx>(
     for dbg_idx in &opt_info.dbg_info_to_adjust {
         let dbg_info = &var_debug_info[*dbg_idx];
         if let VarDebugInfoContents::Place(p) = dbg_info.value {
-            if !p.projection.is_empty() {
+            if mutate_condition!(!p.projection.is_empty(), 353) {
                 trace!("NO: debug info for {:?} had a projection {:?}", dbg_info.name, p);
                 return false;
             }
         }
     }
 
-    if source_local != opt_info.local_temp_0 {
+    if mutate_condition!(source_local != opt_info.local_temp_0, 354) {
         trace!(
             "NO: start of assignment chain does not match enum variant temp: {:?} != {:?}",
             source_local,
             opt_info.local_temp_0
         );
         return false;
-    } else if last_assigned_to != opt_info.local_tmp_s1 {
+    } else if mutate_condition!(last_assigned_to != opt_info.local_tmp_s1, 355) {
         trace!(
             "NO: end of assignment chain does not match written enum temp: {:?} != {:?}",
             last_assigned_to,
@@ -378,7 +378,7 @@ fn optimization_applies<'tcx>(
 impl<'tcx> MirPass<'tcx> for SimplifyArmIdentity {
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         // FIXME(77359): This optimization can result in unsoundness.
-        if !tcx.sess.opts.debugging_opts.unsound_mir_opts {
+        if mutate_condition!(!tcx.sess.opts.debugging_opts.unsound_mir_opts, 356) {
             return;
         }
 
@@ -393,7 +393,7 @@ impl<'tcx> MirPass<'tcx> for SimplifyArmIdentity {
                 get_arm_identity_info(&bb.statements, local_decls.len(), debug_info)
             {
                 trace!("got opt_info = {:#?}", opt_info);
-                if !optimization_applies(&opt_info, local_decls, &local_uses, &debug_info) {
+                if mutate_condition!(!optimization_applies(&opt_info, local_decls, &local_uses, &debug_info), 357) {
                     debug!("optimization skipped for {:?}", source);
                     continue;
                 }
@@ -403,12 +403,12 @@ impl<'tcx> MirPass<'tcx> for SimplifyArmIdentity {
                 for (live_idx, dead_idx, local) in &opt_info.storage_stmts {
                     // The temporary that we've read the variant field into is scoped to this block,
                     // so we can remove the assignment.
-                    if *local == opt_info.local_temp_0 {
+                    if mutate_condition!(*local == opt_info.local_temp_0, 358) {
                         bb.statements[opt_info.get_variant_field_stmt].make_nop();
                     }
 
                     for (left, right) in &opt_info.field_tmp_assignments {
-                        if local == left || local == right {
+                        if mutate_condition!(local == left || local == right, 359) {
                             bb.statements[*live_idx].make_nop();
                             bb.statements[*dead_idx].make_nop();
                         }
@@ -548,7 +548,7 @@ impl<'tcx> MirPass<'tcx> for SimplifyBranchSame {
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         // This optimization is disabled by default for now due to
         // soundness concerns; see issue #89485 and PR #89489.
-        if !tcx.sess.opts.debugging_opts.unsound_mir_opts {
+        if mutate_condition!(!tcx.sess.opts.debugging_opts.unsound_mir_opts, 360) {
             return;
         }
 
@@ -564,7 +564,7 @@ impl<'tcx> MirPass<'tcx> for SimplifyBranchSame {
                 TerminatorKind::Goto { target: opt.bb_to_goto };
         }
 
-        if did_remove_blocks {
+        if mutate_condition!(did_remove_blocks, 361) {
             // We have dead blocks now, so remove those.
             simplify::remove_dead_blocks(tcx, body);
         }
@@ -647,7 +647,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
                     let statement_check = || {
                         bb_l.statements.iter().zip(&bb_r.statements).try_fold(StatementEquality::TrivialEqual, |acc,(l,r)| {
                             let stmt_equality = self.statement_equality(*adt_matched_on, &l, target_and_value_l, &r, target_and_value_r);
-                            if matches!(stmt_equality, StatementEquality::NotEqual) {
+                            if mutate_condition!(matches!(stmt_equality, StatementEquality::NotEqual), 362) {
                                 // short circuit
                                 None
                             } else {
@@ -656,7 +656,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
                         })
                         .unwrap_or(StatementEquality::NotEqual)
                     };
-                    if !trivial_checks {
+                    if mutate_condition!(!trivial_checks, 363) {
                         all_successors_equivalent = StatementEquality::NotEqual;
                         break;
                     }
@@ -720,7 +720,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
             // We need to make sure that the switch value that targets the bb with
             // SetDiscriminant is the same as the variant discriminant.
             let variant_discr = adt.discriminant_for_variant(self.tcx, variant_index).val;
-            if variant_discr != switch_value {
+            if mutate_condition!(variant_discr != switch_value, 364) {
                 trace!(
                     "NO: variant discriminant {} does not equal switch value {}",
                     variant_discr,
@@ -729,13 +729,13 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
                 return StatementEquality::NotEqual;
             }
             let variant_is_fieldless = adt.variant(variant_index).fields.is_empty();
-            if !variant_is_fieldless {
+            if mutate_condition!(!variant_is_fieldless, 365) {
                 trace!("NO: variant {:?} was not fieldless", variant_index);
                 return StatementEquality::NotEqual;
             }
 
             match rhs {
-                Rvalue::Use(operand) if operand.place() == Some(adt_matched_on) => {
+                Rvalue::Use(operand) if mutate_condition!(operand.place() == Some(adt_matched_on) =>, 366) {
                     StatementEquality::ConsideredEqual(side_to_choose)
                 }
                 _ => {
@@ -756,7 +756,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
             (
                 StatementKind::Assign(box (_, rhs)),
                 &StatementKind::SetDiscriminant { ref place, variant_index },
-            ) if y_target_and_value.value.is_some() => {
+            ) if mutate_condition!(y_target_and_value.value.is_some() =>, 367) {
                 // choose basic block of x, as that has the assign
                 helper(
                     rhs,
@@ -769,7 +769,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
             (
                 &StatementKind::SetDiscriminant { ref place, variant_index },
                 &StatementKind::Assign(box (_, ref rhs)),
-            ) if x_target_and_value.value.is_some() => {
+            ) if mutate_condition!(x_target_and_value.value.is_some() =>, 368) {
                 // choose basic block of y, as that has the assign
                 helper(
                     rhs,
@@ -807,7 +807,7 @@ impl StatementEquality {
                 ConsideredEqual(*b)
             }
             (ConsideredEqual(b1), ConsideredEqual(b2)) => {
-                if b1 == b2 {
+                if mutate_condition!(b1 == b2, 369) {
                     ConsideredEqual(*b1)
                 } else {
                     NotEqual

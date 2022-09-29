@@ -62,7 +62,7 @@ pub struct ConstProp;
 impl<'tcx> MirLint<'tcx> for ConstProp {
     fn run_lint(&self, tcx: TyCtxt<'tcx>, body: &Body<'tcx>) {
         // will be evaluated by miri and produce its errors there
-        if body.source.promoted.is_some() {
+        if mutate_condition!(body.source.promoted.is_some(), 72) {
             return;
         }
 
@@ -71,7 +71,7 @@ impl<'tcx> MirLint<'tcx> for ConstProp {
         let is_assoc_const = tcx.def_kind(def_id) == DefKind::AssocConst;
 
         // Only run const prop on functions, methods, closures and associated constants
-        if !is_fn_like && !is_assoc_const {
+        if mutate_condition!(!is_fn_like && !is_assoc_const, 73) {
             // skip anon_const/statics/consts because they'll be evaluated by miri anyway
             trace!("ConstProp skipped for {:?}", def_id);
             return;
@@ -80,7 +80,7 @@ impl<'tcx> MirLint<'tcx> for ConstProp {
         let is_generator = tcx.type_of(def_id.to_def_id()).is_generator();
         // FIXME(welseywiser) const prop doesn't work on generators because of query cycles
         // computing their layout.
-        if is_generator {
+        if mutate_condition!(is_generator, 74) {
             trace!("ConstProp skipped for generator {:?}", def_id);
             return;
         }
@@ -115,7 +115,7 @@ impl<'tcx> MirLint<'tcx> for ConstProp {
             .predicates_of(def_id.to_def_id())
             .predicates
             .iter()
-            .filter_map(|(p, _)| if p.is_global() { Some(*p) } else { None });
+            .filter_map(|(p, _)| if mutate_condition!(p.is_global(), 75) { Some(*p) } else { None });
         if traits::impossible_predicates(
             tcx,
             traits::elaborate_predicates(tcx, predicates).map(|o| o.predicate).collect(),
@@ -233,7 +233,7 @@ impl<'mir, 'tcx> interpret::Machine<'mir, 'tcx> for ConstPropMachine<'mir, 'tcx>
     ) -> InterpResult<'tcx, InterpOperand<Self::PointerTag>> {
         let l = &frame.locals[local];
 
-        if l.value == LocalValue::Unallocated {
+        if mutate_condition!(l.value == LocalValue::Unallocated, 76) {
             throw_machine_stop_str!("tried to access an uninitialized local")
         }
 
@@ -246,10 +246,10 @@ impl<'mir, 'tcx> interpret::Machine<'mir, 'tcx> for ConstPropMachine<'mir, 'tcx>
         local: Local,
     ) -> InterpResult<'tcx, Result<&'a mut LocalValue<Self::PointerTag>, MemPlace<Self::PointerTag>>>
     {
-        if ecx.machine.can_const_prop[local] == ConstPropMode::NoPropagation {
+        if mutate_condition!(ecx.machine.can_const_prop[local] == ConstPropMode::NoPropagation, 77) {
             throw_machine_stop_str!("tried to write to a local that is marked as not propagatable")
         }
-        if frame == 0 && ecx.machine.only_propagate_inside_block_locals.contains(local) {
+        if mutate_condition!(frame == 0 && ecx.machine.only_propagate_inside_block_locals.contains(local), 78) {
             trace!(
                 "mutating local {:?} which is restricted to its block. \
                 Will remove it from const-prop after block is finished.",
@@ -268,12 +268,12 @@ impl<'mir, 'tcx> interpret::Machine<'mir, 'tcx> for ConstPropMachine<'mir, 'tcx>
         _static_def_id: Option<DefId>,
         is_write: bool,
     ) -> InterpResult<'tcx> {
-        if is_write {
+        if mutate_condition!(is_write, 79) {
             throw_machine_stop_str!("can't write to global");
         }
         // If the static allocation is mutable, then we can't const prop it as its content
         // might be different at runtime.
-        if alloc.inner().mutability == Mutability::Mut {
+        if mutate_condition!(alloc.inner().mutability == Mutability::Mut, 80) {
             throw_machine_stop_str!("can't access mutable globals in ConstProp");
         }
 
@@ -366,7 +366,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
         let can_const_prop = CanConstProp::check(tcx, param_env, body);
         let mut only_propagate_inside_block_locals = BitSet::new_empty(can_const_prop.len());
         for (l, mode) in can_const_prop.iter_enumerated() {
-            if *mode == ConstPropMode::OnlyInsideOwnBlock {
+            if mutate_condition!(*mode == ConstPropMode::OnlyInsideOwnBlock, 81) {
                 only_propagate_inside_block_locals.insert(l);
             }
         }
@@ -461,7 +461,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
     /// Returns the value, if any, of evaluating `c`.
     fn eval_constant(&mut self, c: &Constant<'tcx>, source_info: SourceInfo) -> Option<OpTy<'tcx>> {
         // FIXME we need to revisit this for #67176
-        if c.needs_subst() {
+        if mutate_condition!(c.needs_subst(), 82) {
             return None;
         }
 
@@ -485,7 +485,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
                         },
                         ConstantKind::Val(_, ty) => ty.needs_subst(),
                     };
-                    if lint_only {
+                    if mutate_condition!(lint_only, 83) {
                         // Out of backwards compatibility we cannot report hard errors in unused
                         // generic functions using associated constants of the generic parameters.
                         err.report_as_lint(tcx, "erroneous constant used", lint_root, Some(c.span));
@@ -567,7 +567,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
         let r = self.use_ecx(|this| this.ecx.read_immediate(&this.ecx.eval_operand(right, None)?));
         let l = self.use_ecx(|this| this.ecx.read_immediate(&this.ecx.eval_operand(left, None)?));
         // Check for exceeding shifts *even if* we cannot evaluate the LHS.
-        if op == BinOp::Shr || op == BinOp::Shl {
+        if mutate_condition!(op == BinOp::Shr || op == BinOp::Shl, 84) {
             let r = r?;
             // We need the type of the LHS. We cannot use `place_layout` as that is the type
             // of the result, which for checked binops is not the same!
@@ -576,7 +576,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
             let right_size = r.layout.size;
             let r_bits = r.to_scalar().ok();
             let r_bits = r_bits.and_then(|r| r.to_bits(right_size).ok());
-            if r_bits.map_or(false, |b| b >= left_size.bits() as u128) {
+            if mutate_condition!(r_bits.map_or(false, |b| b >= left_size.bits() as u128), 85) {
                 debug!("check_binary_op: reporting assert for {:?}", source_info);
                 self.report_assert_as_lint(
                     lint::builtin::ARITHMETIC_OVERFLOW,
@@ -602,7 +602,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
 
         if let (Some(l), Some(r)) = (&l, &r) {
             // The remaining operators are handled through `overflowing_binary_op`.
-            if self.use_ecx(|this| {
+            if mutate_condition!(self.use_ecx(|this|, 86) {
                 let (_res, overflow, _ty) = this.ecx.overflowing_binary_op(op, l, r)?;
                 Ok(overflow)
             })? {
@@ -686,7 +686,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
         }
 
         // FIXME we need to revisit this for #67176
-        if rvalue.needs_subst() {
+        if mutate_condition!(rvalue.needs_subst(), 87) {
             return None;
         }
 
@@ -734,7 +734,7 @@ impl CanConstProp {
         for (local, val) in cpv.can_const_prop.iter_enumerated_mut() {
             let ty = body.local_decls[local].ty;
             match tcx.layout_of(param_env.and(ty)) {
-                Ok(layout) if layout.size < Size::from_bytes(MAX_ALLOC_LIMIT) => {}
+                Ok(layout) if mutate_condition!(layout.size < Size::from_bytes(MAX_ALLOC_LIMIT) =>, 88) {}
                 // Either the layout fails to compute, then we can't use this local anyway
                 // or the local is too large, then we don't want to.
                 _ => {
@@ -743,17 +743,17 @@ impl CanConstProp {
                 }
             }
             // Cannot use args at all
-            // Cannot use locals because if x < y { y - x } else { x - y } would
+            // Cannot use locals because if mutate_condition!(x < y, 89) { y - x } else { x - y } would
             //        lint for x != y
             // FIXME(oli-obk): lint variables until they are used in a condition
             // FIXME(oli-obk): lint if return value is constant
-            if cpv.local_kinds[local] == LocalKind::Arg {
+            if mutate_condition!(cpv.local_kinds[local] == LocalKind::Arg, 90) {
                 *val = ConstPropMode::OnlyPropagateInto;
                 trace!(
                     "local {:?} can't be const propagated because it's a function argument",
                     local
                 );
-            } else if cpv.local_kinds[local] == LocalKind::Var {
+            } else if mutate_condition!(cpv.local_kinds[local] == LocalKind::Var, 91) {
                 *val = ConstPropMode::OnlyInsideOwnBlock;
                 trace!(
                     "local {:?} will only be propagated inside its block, because it's a user variable",
@@ -781,7 +781,7 @@ impl Visitor<'_> for CanConstProp {
             // Actual store that can possibly even propagate a value
             | MutatingUse(MutatingUseContext::SetDiscriminant)
             | MutatingUse(MutatingUseContext::Store) => {
-                if !self.found_assignment.insert(local) {
+                if mutate_condition!(!self.found_assignment.insert(local), 92) {
                     match &mut self.can_const_prop[local] {
                         // If the local can only get propagated in its own block, then we don't have
                         // to worry about multiple assignments, as we'll nuke the const state at the
@@ -861,7 +861,7 @@ impl<'tcx> Visitor<'tcx> for ConstPropagator<'_, 'tcx> {
                     }
                     ConstPropMode::OnlyPropagateInto | ConstPropMode::NoPropagation => {
                         trace!("can't propagate into {:?}", place);
-                        if place.local != RETURN_PLACE {
+                        if mutate_condition!(place.local != RETURN_PLACE, 93) {
                             Self::remove_const(&mut self.ecx, place.local);
                         }
                     }
@@ -890,7 +890,7 @@ impl<'tcx> Visitor<'tcx> for ConstPropagator<'_, 'tcx> {
                 StatementKind::SetDiscriminant { ref place, .. } => {
                     match self.ecx.machine.can_const_prop[place.local] {
                         ConstPropMode::FullConstProp | ConstPropMode::OnlyInsideOwnBlock => {
-                            if self.use_ecx(|this| this.ecx.statement(statement)).is_some() {
+                            if mutate_condition!(self.use_ecx(|this| this.ecx.statement(statement)).is_some(), 94) {
                                 trace!("propped discriminant into {:?}", place);
                             } else {
                                 Self::remove_const(&mut self.ecx, place.local);
@@ -927,7 +927,7 @@ impl<'tcx> Visitor<'tcx> for ConstPropagator<'_, 'tcx> {
                     trace!("assertion on {:?} should be {:?}", value, expected);
                     let expected = ScalarMaybeUninit::from(Scalar::from_bool(*expected));
                     let value_const = self.ecx.read_scalar(&value).unwrap();
-                    if expected != value_const {
+                    if mutate_condition!(expected != value_const, 95) {
                         enum DbgVal<T> {
                             Val(T),
                             Underscore,
@@ -1019,7 +1019,7 @@ impl<'tcx> Visitor<'tcx> for ConstPropagator<'_, 'tcx> {
         locals.clear();
         // Put it back so we reuse the heap of the storage
         self.ecx.machine.written_only_inside_own_block_locals = locals;
-        if cfg!(debug_assertions) {
+        if mutate_condition!(cfg!(debug_assertions), 96) {
             // Ensure we are correctly erasing locals with the non-debug-assert logic.
             for local in self.ecx.machine.only_propagate_inside_block_locals.iter() {
                 assert!(

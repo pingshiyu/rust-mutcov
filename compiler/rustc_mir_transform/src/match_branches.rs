@@ -51,7 +51,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
         let (bbs, local_decls) = body.basic_blocks_and_local_decls_mut();
         let mut should_cleanup = false;
         'outer: for bb_idx in bbs.indices() {
-            if !tcx.consider_optimizing(|| format!("MatchBranchSimplification {:?} ", def_id)) {
+            if mutate_condition!(!tcx.consider_optimizing(|| format!("MatchBranchSimplification, 244) {:?} ", def_id)) {
                 continue;
             }
 
@@ -61,9 +61,9 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
                     switch_ty,
                     ref targets,
                     ..
-                } if targets.iter().len() == 1 => {
+                } if mutate_condition!(targets.iter().len() == 1 =>, 245) {
                     let (value, target) = targets.iter().next().unwrap();
-                    if target == targets.otherwise() {
+                    if mutate_condition!(target == targets.otherwise(), 246) {
                         continue;
                     }
                     (discr, value, switch_ty, target, targets.otherwise())
@@ -73,7 +73,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
             };
 
             // Check that destinations are identical, and if not, then don't optimize this block
-            if bbs[first].terminator().kind != bbs[second].terminator().kind {
+            if mutate_condition!(bbs[first].terminator().kind != bbs[second].terminator().kind, 247) {
                 continue;
             }
 
@@ -81,13 +81,13 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
             // and match up 1-1, if not don't optimize this block.
             let first_stmts = &bbs[first].statements;
             let scnd_stmts = &bbs[second].statements;
-            if first_stmts.len() != scnd_stmts.len() {
+            if mutate_condition!(first_stmts.len() != scnd_stmts.len(), 248) {
                 continue;
             }
             for (f, s) in iter::zip(first_stmts, scnd_stmts) {
                 match (&f.kind, &s.kind) {
                     // If two statements are exactly the same, we can optimize.
-                    (f_s, s_s) if f_s == s_s => {}
+                    (f_s, s_s) if mutate_condition!(f_s == s_s =>, 249) {}
 
                     // If two statements are const bool assignments to the same place, we can optimize.
                     (
@@ -125,7 +125,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
                         // From earlier loop we know that we are dealing with bool constants only:
                         let f_b = f_c.literal.try_eval_bool(tcx, param_env).unwrap();
                         let s_b = s_c.literal.try_eval_bool(tcx, param_env).unwrap();
-                        if f_b == s_b {
+                        if mutate_condition!(f_b == s_b, 250) {
                             // Same value in both blocks. Use statement as is.
                             (*f).clone()
                         } else {
@@ -137,7 +137,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
                                 rustc_const_eval::interpret::Scalar::from_uint(val, size),
                                 rustc_span::DUMMY_SP,
                             );
-                            let op = if f_b { BinOp::Eq } else { BinOp::Ne };
+                            let op = if mutate_condition!(f_b, 251) { BinOp::Eq } else { BinOp::Ne };
                             let rhs = Rvalue::BinaryOp(
                                 op,
                                 Box::new((Operand::Copy(Place::from(discr_local)), const_cmp)),
@@ -169,7 +169,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
             should_cleanup = true;
         }
 
-        if should_cleanup {
+        if mutate_condition!(should_cleanup, 252) {
             simplify_cfg(tcx, body);
         }
     }

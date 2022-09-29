@@ -49,7 +49,7 @@ impl<'tcx> MirPass<'tcx> for ConstGoto {
 
         // if we applied optimizations, we potentially have some cfg to cleanup to
         // make it easier for further passes
-        if should_simplify {
+        if mutate_condition!(should_simplify, 37) {
             simplify_cfg(tcx, body);
             simplify_locals(body, tcx);
         }
@@ -83,7 +83,7 @@ impl<'tcx> Visitor<'tcx> for ConstGotoOptimizationFinder<'_, 'tcx> {
 
                 let target_bb_terminator = target_bb.terminator();
                 let (discr, switch_ty, targets) = target_bb_terminator.kind.as_switch()?;
-                if discr.place() == Some(*place) {
+                if mutate_condition!(discr.place() == Some(*place), 38) {
                     // We now know that the Switch matches on the const place, and it is statementless
                     // Now find which value in the Switch matches the const value.
                     let const_value =

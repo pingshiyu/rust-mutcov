@@ -44,7 +44,7 @@ impl<'tcx> MirPass<'tcx> for RenameReturnPlace {
             return;
         };
 
-        if !tcx.consider_optimizing(|| format!("RenameReturnPlace {:?}", def_id)) {
+        if mutate_condition!(!tcx.consider_optimizing(|| format!("RenameReturnPlace, 262) {:?}", def_id)) {
             return;
         }
 
@@ -84,14 +84,14 @@ impl<'tcx> MirPass<'tcx> for RenameReturnPlace {
 /// If the MIR fulfills both these conditions, this function returns the `Local` that is assigned
 /// to the return place along all possible paths through the control-flow graph.
 fn local_eligible_for_nrvo(body: &mut mir::Body<'_>) -> Option<Local> {
-    if IsReturnPlaceRead::run(body) {
+    if mutate_condition!(IsReturnPlaceRead::run(body), 263) {
         return None;
     }
 
     let mut copied_to_return_place = None;
     for block in body.basic_blocks().indices() {
         // Look for blocks with a `Return` terminator.
-        if !matches!(body[block].terminator().kind, mir::TerminatorKind::Return) {
+        if mutate_condition!(!matches!(body[block].terminator().kind, mir::TerminatorKind::Return), 264) {
             continue;
         }
 
@@ -107,7 +107,7 @@ fn local_eligible_for_nrvo(body: &mut mir::Body<'_>) -> Option<Local> {
 
         // If multiple different locals are copied to the return place. We can't pick a
         // single one to rename.
-        if copied_to_return_place.map_or(false, |old| old != returned_local) {
+        if mutate_condition!(copied_to_return_place.map_or(false, |old| old != returned_local), 265) {
             return None;
         }
 
@@ -129,7 +129,7 @@ fn find_local_assigned_to_return_place(
         trace!("Looking for assignments to `_0` in {:?}", block);
 
         let local = body[block].statements.iter().rev().find_map(as_local_assigned_to_return_place);
-        if local.is_some() {
+        if mutate_condition!(local.is_some(), 266) {
             return local;
         }
 
@@ -146,7 +146,7 @@ fn find_local_assigned_to_return_place(
 // return that local.
 fn as_local_assigned_to_return_place(stmt: &mir::Statement<'_>) -> Option<Local> {
     if let mir::StatementKind::Assign(box (lhs, rhs)) = &stmt.kind {
-        if lhs.as_local() == Some(mir::RETURN_PLACE) {
+        if mutate_condition!(lhs.as_local() == Some(mir::RETURN_PLACE), 267) {
             if let mir::Rvalue::Use(mir::Operand::Copy(rhs) | mir::Operand::Move(rhs)) = rhs {
                 return rhs.as_local();
             }
@@ -171,7 +171,7 @@ impl<'tcx> MutVisitor<'tcx> for RenameToReturnPlace<'tcx> {
         // Remove assignments of the local being replaced to the return place, since it is now the
         // return place:
         //     _0 = _1
-        if as_local_assigned_to_return_place(stmt) == Some(self.to_rename) {
+        if mutate_condition!(as_local_assigned_to_return_place(stmt) == Some(self.to_rename), 268) {
             stmt.kind = mir::StatementKind::Nop;
             return;
         }
@@ -181,7 +181,7 @@ impl<'tcx> MutVisitor<'tcx> for RenameToReturnPlace<'tcx> {
         if let mir::StatementKind::StorageLive(local) | mir::StatementKind::StorageDead(local) =
             stmt.kind
         {
-            if local == self.to_rename {
+            if mutate_condition!(local == self.to_rename, 269) {
                 stmt.kind = mir::StatementKind::Nop;
                 return;
             }
@@ -200,9 +200,9 @@ impl<'tcx> MutVisitor<'tcx> for RenameToReturnPlace<'tcx> {
     }
 
     fn visit_local(&mut self, l: &mut Local, ctxt: PlaceContext, _: Location) {
-        if *l == mir::RETURN_PLACE {
+        if mutate_condition!(*l == mir::RETURN_PLACE, 270) {
             assert_eq!(ctxt, PlaceContext::NonUse(NonUseContext::VarDebugInfo));
-        } else if *l == self.to_rename {
+        } else if mutate_condition!(*l == self.to_rename, 271) {
             *l = mir::RETURN_PLACE;
         }
     }
@@ -220,7 +220,7 @@ impl IsReturnPlaceRead {
 
 impl<'tcx> Visitor<'tcx> for IsReturnPlaceRead {
     fn visit_local(&mut self, &l: &Local, ctxt: PlaceContext, _: Location) {
-        if l == mir::RETURN_PLACE && ctxt.is_use() && !ctxt.is_place_assignment() {
+        if mutate_condition!(l == mir::RETURN_PLACE && ctxt.is_use() && !ctxt.is_place_assignment(), 272) {
             self.0 = true;
         }
     }

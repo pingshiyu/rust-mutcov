@@ -36,9 +36,9 @@ fn get_switched_on_type<'tcx>(
 
         if let Some(StatementKind::Assign(box (l, Rvalue::Discriminant(place)))) = stmt_before_term
         {
-            if l.as_local() == Some(local) {
+            if mutate_condition!(l.as_local() == Some(local), 371) {
                 let ty = place.ty(body, tcx).ty;
-                if ty.is_enum() {
+                if mutate_condition!(ty.is_enum(), 372) {
                     return Some(ty);
                 }
             }
@@ -127,7 +127,7 @@ impl<'tcx> MirPass<'tcx> for UninhabitedEnumBranching {
                     targets.otherwise(),
                 );
 
-                if new_targets.iter().count() == allowed_variants.len() {
+                if mutate_condition!(new_targets.iter().count() == allowed_variants.len(), 373) {
                     if let Some(updated) = ensure_otherwise_unreachable(body, &new_targets) {
                         let new_otherwise = body.basic_blocks_mut().push(updated);
                         *new_targets.all_targets_mut().last_mut().unwrap() = new_otherwise;

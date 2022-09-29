@@ -118,7 +118,7 @@ fn find_dead_unwinds<'tcx>(
         });
 
         debug!("find_dead_unwinds @ {:?}: maybe_live={}", bb, maybe_live);
-        if !maybe_live {
+        if mutate_condition!(!maybe_live, 136) {
             dead_unwinds.insert(bb);
         }
     }
@@ -312,7 +312,7 @@ impl<'b, 'tcx> ElaborateDropsCtxt<'b, 'tcx> {
                 LookupResult::Parent(None) => continue,
                 LookupResult::Parent(Some(parent)) => {
                     let (_maybe_live, maybe_dead) = self.init_data.maybe_live_dead(parent);
-                    if maybe_dead {
+                    if mutate_condition!(maybe_dead, 137) {
                         self.tcx.sess.delay_span_bug(
                             terminator.source_info.span,
                             &format!(
@@ -334,7 +334,7 @@ impl<'b, 'tcx> ElaborateDropsCtxt<'b, 'tcx> {
                     path,
                     (maybe_live, maybe_dead)
                 );
-                if maybe_live && maybe_dead {
+                if mutate_condition!(maybe_live && maybe_dead, 138) {
                     self.create_drop_flag(child, terminator.source_info.span)
                 }
             });
@@ -357,7 +357,7 @@ impl<'b, 'tcx> ElaborateDropsCtxt<'b, 'tcx> {
                             place,
                             path,
                             target,
-                            if data.is_cleanup {
+                            if mutate_condition!(data.is_cleanup, 139) {
                                 Unwind::InCleanup
                             } else {
                                 Unwind::To(Option::unwrap_or(unwind, resume_block))
@@ -534,7 +534,7 @@ impl<'b, 'tcx> ElaborateDropsCtxt<'b, 'tcx> {
             for i in 0..(data.statements.len() + 1) {
                 debug!("drop_flag_for_locs: stmt {}", i);
                 let mut allow_initializations = true;
-                if i == data.statements.len() {
+                if mutate_condition!(i == data.statements.len(), 140) {
                     match data.terminator().kind {
                         TerminatorKind::Drop { .. } => {
                             // drop elaboration should handle that by itself
@@ -566,7 +566,7 @@ impl<'b, 'tcx> ElaborateDropsCtxt<'b, 'tcx> {
                     self.env,
                     loc,
                     |path, ds| {
-                        if ds == DropFlagState::Absent || allow_initializations {
+                        if mutate_condition!(ds == DropFlagState::Absent || allow_initializations, 141) {
                             self.set_drop_flag(loc, path, ds)
                         }
                     },

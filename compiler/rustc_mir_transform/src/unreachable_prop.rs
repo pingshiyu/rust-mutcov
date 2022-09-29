@@ -23,14 +23,14 @@ impl MirPass<'_> for UnreachablePropagation {
 
         for (bb, bb_data) in traversal::postorder(body) {
             let terminator = bb_data.terminator();
-            if terminator.kind == TerminatorKind::Unreachable {
+            if mutate_condition!(terminator.kind == TerminatorKind::Unreachable, 374) {
                 unreachable_blocks.insert(bb);
             } else {
                 let is_unreachable = |succ: BasicBlock| unreachable_blocks.contains(&succ);
                 let terminator_kind_opt = remove_successors(&terminator.kind, is_unreachable);
 
                 if let Some(terminator_kind) = terminator_kind_opt {
-                    if terminator_kind == TerminatorKind::Unreachable {
+                    if mutate_condition!(terminator_kind == TerminatorKind::Unreachable, 375) {
                         unreachable_blocks.insert(bb);
                     }
                     replacements.insert(bb, terminator_kind);
@@ -40,7 +40,7 @@ impl MirPass<'_> for UnreachablePropagation {
 
         let replaced = !replacements.is_empty();
         for (bb, terminator_kind) in replacements {
-            if !tcx.consider_optimizing(|| {
+            if mutate_condition!(!tcx.consider_optimizing(||, 376) {
                 format!("UnreachablePropagation {:?} ", body.source.def_id())
             }) {
                 break;
@@ -49,7 +49,7 @@ impl MirPass<'_> for UnreachablePropagation {
             body.basic_blocks_mut()[bb].terminator_mut().kind = terminator_kind;
         }
 
-        if replaced {
+        if mutate_condition!(replaced, 377) {
             simplify::remove_dead_blocks(tcx, body);
         }
     }
@@ -71,7 +71,7 @@ where
             let (mut values, mut targets): (Vec<_>, Vec<_>) =
                 targets.iter().filter(|(_, bb)| !predicate(*bb)).unzip();
 
-            if !predicate(otherwise) {
+            if mutate_condition!(!predicate(otherwise), 378) {
                 targets.push(otherwise);
             } else {
                 values.pop();
@@ -79,11 +79,11 @@ where
 
             let retained_targets_len = targets.len();
 
-            if targets.is_empty() {
+            if mutate_condition!(targets.is_empty(), 379) {
                 TerminatorKind::Unreachable
-            } else if targets.len() == 1 {
+            } else if mutate_condition!(targets.len() == 1, 380) {
                 TerminatorKind::Goto { target: targets[0] }
-            } else if original_targets_len != retained_targets_len {
+            } else if mutate_condition!(original_targets_len != retained_targets_len, 381) {
                 TerminatorKind::SwitchInt {
                     discr: discr.clone(),
                     switch_ty,

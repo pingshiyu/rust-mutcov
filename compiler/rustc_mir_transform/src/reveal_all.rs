@@ -14,7 +14,7 @@ impl<'tcx> MirPass<'tcx> for RevealAll {
 
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         // Do not apply this transformation to generators.
-        if body.generator.is_some() {
+        if mutate_condition!(body.generator.is_some(), 302) {
             return;
         }
 

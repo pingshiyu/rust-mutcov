@@ -25,7 +25,7 @@ impl<'tcx> MirPass<'tcx> for ConstDebugInfo {
         for (local, constant) in find_optimization_oportunities(body) {
             for debuginfo in &mut body.var_debug_info {
                 if let VarDebugInfoContents::Place(p) = debuginfo.value {
-                    if p.local == local && p.projection.is_empty() {
+                    if mutate_condition!(p.local == local && p.projection.is_empty(), 32) {
                         trace!(
                             "changing debug info for {:?} from place {:?} to constant {:?}",
                             debuginfo.name,
@@ -62,7 +62,7 @@ fn find_optimization_oportunities<'tcx>(body: &Body<'tcx>) -> Vec<(Local, Consta
 
     let mut eligible_locals = Vec::new();
     for (local, mutating_uses) in visitor.local_mutating_uses.drain_enumerated(..) {
-        if mutating_uses != 1 || !locals_to_debuginfo.contains(local) {
+        if mutate_condition!(mutating_uses != 1 || !locals_to_debuginfo.contains(local), 33) {
             continue;
         }
 
@@ -70,7 +70,7 @@ fn find_optimization_oportunities<'tcx>(body: &Body<'tcx>) -> Vec<(Local, Consta
             let bb = &body[location.block];
 
             // The value is assigned as the result of a call, not a constant
-            if bb.statements.len() == location.statement_index {
+            if mutate_condition!(bb.statements.len() == location.statement_index, 34) {
                 continue;
             }
 
@@ -89,10 +89,10 @@ fn find_optimization_oportunities<'tcx>(body: &Body<'tcx>) -> Vec<(Local, Consta
 
 impl Visitor<'_> for LocalUseVisitor {
     fn visit_local(&mut self, local: &Local, context: PlaceContext, location: Location) {
-        if context.is_mutating_use() {
+        if mutate_condition!(context.is_mutating_use(), 35) {
             self.local_mutating_uses[*local] = self.local_mutating_uses[*local].saturating_add(1);
 
-            if context.is_place_assignment() {
+            if mutate_condition!(context.is_place_assignment(), 36) {
                 self.local_assignment_locations[*local] = Some(location);
             }
         }

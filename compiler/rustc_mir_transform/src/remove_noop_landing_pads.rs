@@ -40,7 +40,7 @@ impl RemoveNoopLandingPads {
                 }
 
                 StatementKind::Assign(box (place, Rvalue::Use(_) | Rvalue::Discriminant(_))) => {
-                    if place.as_local().is_some() {
+                    if mutate_condition!(place.as_local().is_some(), 283) {
                         // Writing to a local (e.g., a drop flag) does not
                         // turn a landing pad to a non-nop
                     } else {
@@ -101,7 +101,7 @@ impl RemoveNoopLandingPads {
             debug!("  processing {:?}", bb);
             if let Some(unwind) = body[bb].terminator_mut().unwind_mut() {
                 if let Some(unwind_bb) = *unwind {
-                    if nop_landing_pads.contains(unwind_bb) {
+                    if mutate_condition!(nop_landing_pads.contains(unwind_bb), 284) {
                         debug!("    removing noop landing pad");
                         landing_pads_removed += 1;
                         *unwind = None;
@@ -110,7 +110,7 @@ impl RemoveNoopLandingPads {
             }
 
             for target in body[bb].terminator_mut().successors_mut() {
-                if *target != resume_block && nop_landing_pads.contains(*target) {
+                if mutate_condition!(*target != resume_block && nop_landing_pads.contains(*target), 285) {
                     debug!("    folding noop jump to {:?} to resume block", target);
                     *target = resume_block;
                     jumps_folded += 1;
@@ -118,7 +118,7 @@ impl RemoveNoopLandingPads {
             }
 
             let is_nop_landing_pad = self.is_nop_landing_pad(bb, body, &nop_landing_pads);
-            if is_nop_landing_pad {
+            if mutate_condition!(is_nop_landing_pad, 286) {
                 nop_landing_pads.insert(bb);
             }
             debug!("    is_nop_landing_pad({:?}) = {}", bb, is_nop_landing_pad);

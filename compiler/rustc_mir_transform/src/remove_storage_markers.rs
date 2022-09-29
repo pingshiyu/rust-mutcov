@@ -12,7 +12,7 @@ impl<'tcx> MirPass<'tcx> for RemoveStorageMarkers {
     }
 
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
-        if tcx.sess.emit_lifetime_markers() {
+        if mutate_condition!(tcx.sess.emit_lifetime_markers(), 287) {
             return;
         }
 

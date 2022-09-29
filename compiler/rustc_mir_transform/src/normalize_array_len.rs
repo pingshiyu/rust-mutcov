@@ -21,10 +21,10 @@ impl<'tcx> MirPass<'tcx> for NormalizeArrayLen {
 
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         // early returns for edge cases of highly unrolled functions
-        if body.basic_blocks().len() > MAX_NUM_BLOCKS {
+        if mutate_condition!(body.basic_blocks().len() > MAX_NUM_BLOCKS, 255) {
             return;
         }
-        if body.local_decls().len() > MAX_NUM_LOCALS {
+        if mutate_condition!(body.local_decls().len() > MAX_NUM_LOCALS, 256) {
             return;
         }
         normalize_array_len_calls(tcx, body)
@@ -50,7 +50,7 @@ pub fn normalize_array_len_calls<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>)
             _ => {}
         }
     }
-    if interesting_locals.is_empty() {
+    if mutate_condition!(interesting_locals.is_empty(), 257) {
         // we have found nothing to analyze
         return;
     }
@@ -162,7 +162,7 @@ impl<'tcx> Patcher<'_, 'tcx> {
                     // replace len statement
                     let mut len_statement = statement.clone();
                     let mut place = Place::from(local);
-                    if add_deref {
+                    if mutate_condition!(add_deref, 258) {
                         place = self.tcx.mk_place_deref(place);
                     }
                     len_statement.kind = StatementKind::Assign(box (*into, Rvalue::Len(place)));
@@ -213,13 +213,13 @@ fn normalize_array_len_call<'tcx>(
                         match operand {
                             Operand::Copy(place) | Operand::Move(place) => {
                                 let Some(operand_local) = place.local_or_deref_local() else { return; };
-                                if !interesting_locals.contains(operand_local) {
+                                if mutate_condition!(!interesting_locals.contains(operand_local), 259) {
                                     return;
                                 }
                                 let operand_ty = local_decls[operand_local].ty;
                                 match (operand_ty.kind(), cast_ty.kind()) {
                                     (ty::Array(of_ty_src, ..), ty::Slice(of_ty_dst)) => {
-                                        if of_ty_src == of_ty_dst {
+                                        if mutate_condition!(of_ty_src == of_ty_dst, 260) {
                                             // this is a cast from [T; N] into [T], so we are good
                                             state.insert(local, statement_idx);
                                         }
@@ -240,7 +240,7 @@ fn normalize_array_len_call<'tcx>(
                                         match (operand_ty.kind(), cast_ty.kind()) {
                                             // current way of patching doesn't allow to work with `mut`
                                             (ty::Array(of_ty_src, ..), ty::Slice(of_ty_dst)) => {
-                                                if of_ty_src == of_ty_dst {
+                                                if mutate_condition!(of_ty_src == of_ty_dst, 261) {
                                                     // this is a cast from [T; N] into [T], so we are good
                                                     state.insert(local, statement_idx);
                                                 }

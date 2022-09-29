@@ -60,13 +60,13 @@ impl<'tcx> MirPass<'tcx> for SimplifyComparisonIntegral {
             match opt.op {
                 BinOp::Eq => {
                     // if the assignment was Eq we want the true case to be first
-                    if first_is_false_target {
+                    if mutate_condition!(first_is_false_target, 337) {
                         new_targets.all_targets_mut().swap(0, 1);
                     }
                 }
                 BinOp::Ne => {
                     // if the assignment was Ne we want the false case to be first
-                    if !first_is_false_target {
+                    if mutate_condition!(!first_is_false_target, 338) {
                         new_targets.all_targets_mut().swap(0, 1);
                     }
                 }
@@ -74,7 +74,7 @@ impl<'tcx> MirPass<'tcx> for SimplifyComparisonIntegral {
             }
 
             // delete comparison statement if it the value being switched on was moved, which means it can not be user later on
-            if opt.can_remove_bin_op_stmt {
+            if mutate_condition!(opt.can_remove_bin_op_stmt, 339) {
                 bb.statements[opt.bin_op_stmt_idx].make_nop();
             } else {
                 // if the integer being compared to a const integral is being moved into the comparison,
@@ -211,7 +211,7 @@ fn find_branch_value_info<'tcx>(
         | (Copy(to_switch_on) | Move(to_switch_on), Constant(branch_value)) => {
             let branch_value_ty = branch_value.literal.ty();
             // we only want to apply this optimization if we are matching on integrals (and chars), as it is not possible to switch on floats
-            if !branch_value_ty.is_integral() && !branch_value_ty.is_char() {
+            if mutate_condition!(!branch_value_ty.is_integral() && !branch_value_ty.is_char(), 340) {
                 return None;
             };
             let branch_value_scalar = branch_value.literal.try_to_scalar()?;

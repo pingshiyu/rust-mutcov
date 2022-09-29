@@ -73,7 +73,7 @@ impl<'tcx> ConstMutationChecker<'_, 'tcx> {
         // `unsafe { *FOO = 0; *BAR.field = 1; }`
         // `unsafe { &mut *FOO }`
         // `unsafe { (*ARRAY)[0] = val; }
-        if !place.projection.iter().any(|p| matches!(p, PlaceElem::Deref)) {
+        if mutate_condition!(!place.projection.iter().any(|p| matches!(p, PlaceElem::Deref)), 7) {
             let source_info = self.body.source_info(location);
             let lint_root = self.body.source_scopes[source_info.scope]
                 .local_data
@@ -101,7 +101,7 @@ impl<'tcx> Visitor<'tcx> for ConstMutationChecker<'_, 'tcx> {
             // Check for assignment to fields of a constant
             // Assigning directly to a constant (e.g. `FOO = true;`) is a hard error,
             // so emitting a lint would be redundant.
-            if !lhs.projection.is_empty() {
+            if mutate_condition!(!lhs.projection.is_empty(), 8) {
                 if let Some(def_id) = self.is_const_item_without_destructor(lhs.local) {
                     self.lint_const_item_usage(&lhs, def_id, loc, |lint| {
                         let mut lint = lint.build("attempting to modify a `const` item");
@@ -137,7 +137,7 @@ impl<'tcx> Visitor<'tcx> for ConstMutationChecker<'_, 'tcx> {
                     crate::util::find_self_call(self.tcx, &self.body, target_local, loc.block)
                 });
                 let lint_loc =
-                    if method_did.is_some() { self.body.terminator_loc(loc.block) } else { loc };
+                    if mutate_condition!(method_did.is_some(), 9) { self.body.terminator_loc(loc.block) } else { loc };
                 self.lint_const_item_usage(place, def_id, lint_loc, |lint| {
                     let mut lint = lint.build("taking a mutable reference to a `const` item");
                     lint

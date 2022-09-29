@@ -36,7 +36,7 @@ fn unsafe_derive_on_repr_packed(tcx: TyCtxt<'_>, def_id: LocalDefId) {
     tcx.struct_span_lint_hir(UNALIGNED_REFERENCES, lint_hir_id, tcx.def_span(def_id), |lint| {
         // FIXME: when we make this a hard error, this should have its
         // own error code.
-        let message = if tcx.generics_of(def_id).own_requires_monomorphization() {
+        let message = if mutate_condition!(tcx.generics_of(def_id).own_requires_monomorphization(), 10) {
             "`#[derive]` can't be used on a `#[repr(packed)]` struct with \
              type or const parameters (error E0133)"
                 .to_string()
@@ -63,8 +63,8 @@ impl<'tcx> Visitor<'tcx> for PackedRefChecker<'_, 'tcx> {
     }
 
     fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _location: Location) {
-        if context.is_borrow() {
-            if util::is_disaligned(self.tcx, self.body, self.param_env, *place) {
+        if mutate_condition!(context.is_borrow(), 11) {
+            if mutate_condition!(util::is_disaligned(self.tcx, self.body, self.param_env, *place), 12) {
                 let def_id = self.body.source.instance.def_id();
                 if let Some(impl_def_id) = self
                     .tcx

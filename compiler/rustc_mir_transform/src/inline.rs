@@ -49,7 +49,7 @@ impl<'tcx> MirPass<'tcx> for Inline {
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         let span = trace_span!("inline", body = %tcx.def_path_str(body.source.def_id()));
         let _guard = span.enter();
-        if inline(tcx, body) {
+        if mutate_condition!(inline(tcx, body), 177) {
             debug!("running simplify cfg on {:?}", body.source);
             CfgSimplifier::new(body).simplify();
             remove_dead_blocks(tcx, body);
@@ -61,16 +61,16 @@ fn inline<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) -> bool {
     let def_id = body.source.def_id().expect_local();
 
     // Only do inlining into fn bodies.
-    if !tcx.hir().body_owner_kind(def_id).is_fn_or_closure() {
+    if mutate_condition!(!tcx.hir().body_owner_kind(def_id).is_fn_or_closure(), 178) {
         return false;
     }
-    if body.source.promoted.is_some() {
+    if mutate_condition!(body.source.promoted.is_some(), 179) {
         return false;
     }
     // Avoid inlining into generators, since their `optimized_mir` is used for layout computation,
     // which can create a cycle, even when no attempt is made to inline the function in the other
     // direction.
-    if body.generator.is_some() {
+    if mutate_condition!(body.generator.is_some(), 180) {
         return false;
     }
 
@@ -110,7 +110,7 @@ impl<'tcx> Inliner<'tcx> {
     fn process_blocks(&mut self, caller_body: &mut Body<'tcx>, blocks: Range<BasicBlock>) {
         for bb in blocks {
             let bb_data = &caller_body[bb];
-            if bb_data.is_cleanup {
+            if mutate_condition!(bb_data.is_cleanup, 181) {
                 continue;
             }
 
@@ -151,7 +151,7 @@ impl<'tcx> Inliner<'tcx> {
         let callee_body = self.tcx.instance_mir(callsite.callee.def);
         self.check_mir_body(callsite, callee_body, callee_attrs)?;
 
-        if !self.tcx.consider_optimizing(|| {
+        if mutate_condition!(!self.tcx.consider_optimizing(||, 182) {
             format!("Inline {:?} into {:?}", callsite.callee, caller_body.source)
         }) {
             return Err("optimization fuel exhausted");
@@ -177,7 +177,7 @@ impl<'tcx> Inliner<'tcx> {
     ) -> Result<(), &'static str> {
         let caller_def_id = caller_body.source.def_id();
         let callee_def_id = callee.def_id();
-        if callee_def_id == caller_def_id {
+        if mutate_condition!(callee_def_id == caller_def_id, 183) {
             return Err("self-recursion");
         }
 
@@ -186,7 +186,7 @@ impl<'tcx> Inliner<'tcx> {
                 // If there is no MIR available (either because it was not in metadata or
                 // because it has no MIR because it's an extern function), then the inliner
                 // won't cause cycles on this.
-                if !self.tcx.is_mir_available(callee_def_id) {
+                if mutate_condition!(!self.tcx.is_mir_available(callee_def_id), 184) {
                     return Err("item MIR unavailable");
                 }
             }
@@ -206,13 +206,13 @@ impl<'tcx> Inliner<'tcx> {
             | InstanceDef::CloneShim(..) => return Ok(()),
         }
 
-        if self.tcx.is_constructor(callee_def_id) {
+        if mutate_condition!(self.tcx.is_constructor(callee_def_id), 185) {
             trace!("constructors always have MIR");
             // Constructor functions cannot cause a query cycle.
             return Ok(());
         }
 
-        if callee_def_id.is_local() {
+        if mutate_condition!(callee_def_id.is_local(), 186) {
             // Avoid a cycle here by only using `instance_mir` only if we have
             // a lower `DefPathHash` than the callee. This ensures that the callee will
             // not inline us. This trick even works with incremental compilation,
@@ -225,7 +225,7 @@ impl<'tcx> Inliner<'tcx> {
 
             // If we know for sure that the function we're calling will itself try to
             // call us, then we avoid inlining that function.
-            if self.tcx.mir_callgraph_reachable((*callee, caller_def_id.expect_local())) {
+            if mutate_condition!(self.tcx.mir_callgraph_reachable((*callee, caller_def_id.expect_local())), 187) {
                 return Err("caller might be reachable from callee (query cycle avoidance)");
             }
 
@@ -289,35 +289,35 @@ impl<'tcx> Inliner<'tcx> {
         // Only inline local functions if they would be eligible for cross-crate
         // inlining. This is to ensure that the final crate doesn't have MIR that
         // reference unexported symbols
-        if callsite.callee.def_id().is_local() {
+        if mutate_condition!(callsite.callee.def_id().is_local(), 188) {
             let is_generic = callsite.callee.substs.non_erasable_generics().next().is_some();
-            if !is_generic && !callee_attrs.requests_inline() {
+            if mutate_condition!(!is_generic && !callee_attrs.requests_inline(), 189) {
                 return Err("not exported");
             }
         }
 
-        if callsite.fn_sig.c_variadic() {
+        if mutate_condition!(callsite.fn_sig.c_variadic(), 190) {
             return Err("C variadic");
         }
 
-        if callee_attrs.flags.contains(CodegenFnAttrFlags::NAKED) {
+        if mutate_condition!(callee_attrs.flags.contains(CodegenFnAttrFlags::NAKED), 191) {
             return Err("naked");
         }
 
-        if callee_attrs.flags.contains(CodegenFnAttrFlags::COLD) {
+        if mutate_condition!(callee_attrs.flags.contains(CodegenFnAttrFlags::COLD), 192) {
             return Err("cold");
         }
 
-        if callee_attrs.no_sanitize != self.codegen_fn_attrs.no_sanitize {
+        if mutate_condition!(callee_attrs.no_sanitize != self.codegen_fn_attrs.no_sanitize, 193) {
             return Err("incompatible sanitizer set");
         }
 
-        if callee_attrs.instruction_set != self.codegen_fn_attrs.instruction_set {
+        if mutate_condition!(callee_attrs.instruction_set != self.codegen_fn_attrs.instruction_set, 194) {
             return Err("incompatible instruction set");
         }
 
         for feature in &callee_attrs.target_features {
-            if !self.codegen_fn_attrs.target_features.contains(feature) {
+            if mutate_condition!(!self.codegen_fn_attrs.target_features.contains(feature), 195) {
                 return Err("incompatible target feature");
             }
         }
@@ -336,7 +336,7 @@ impl<'tcx> Inliner<'tcx> {
     ) -> Result<(), &'static str> {
         let tcx = self.tcx;
 
-        let mut threshold = if callee_attrs.requests_inline() {
+        let mut threshold = if mutate_condition!(callee_attrs.requests_inline(), 196) {
             self.tcx.sess.opts.debugging_opts.inline_mir_hint_threshold.unwrap_or(100)
         } else {
             self.tcx.sess.opts.debugging_opts.inline_mir_threshold.unwrap_or(50)
@@ -345,7 +345,7 @@ impl<'tcx> Inliner<'tcx> {
         // Give a bonus functions with a small number of blocks,
         // We normally have two or three blocks for even
         // very small functions.
-        if callee_body.basic_blocks().len() <= 3 {
+        if mutate_condition!(callee_body.basic_blocks().len() <= 3, 197) {
             threshold += threshold / 4;
         }
         debug!("    final inline threshold = {}", threshold);
@@ -359,7 +359,7 @@ impl<'tcx> Inliner<'tcx> {
         let mut work_list = vec![START_BLOCK];
         let mut visited = BitSet::new_empty(callee_body.basic_blocks().len());
         while let Some(bb) = work_list.pop() {
-            if !visited.insert(bb.index()) {
+            if mutate_condition!(!visited.insert(bb.index()), 198) {
                 continue;
             }
             let blk = &callee_body.basic_blocks()[bb];
@@ -384,7 +384,7 @@ impl<'tcx> Inliner<'tcx> {
                     // If the place doesn't actually need dropping, treat it like
                     // a regular goto.
                     let ty = callsite.callee.subst_mir(self.tcx, &place.ty(callee_body, tcx).ty);
-                    if ty.needs_drop(tcx, self.param_env) {
+                    if mutate_condition!(ty.needs_drop(tcx, self.param_env), 199) {
                         cost += CALL_PENALTY;
                         if let Some(unwind) = unwind {
                             cost += LANDINGPAD_PENALTY;
@@ -411,15 +411,15 @@ impl<'tcx> Inliner<'tcx> {
                         if let Ok(Some(instance)) =
                             Instance::resolve(self.tcx, self.param_env, def_id, substs)
                         {
-                            if callsite.callee.def_id() == instance.def_id() {
+                            if mutate_condition!(callsite.callee.def_id() == instance.def_id(), 200) {
                                 return Err("self-recursion");
-                            } else if self.history.contains(&instance) {
+                            } else if mutate_condition!(self.history.contains(&instance), 201) {
                                 return Err("already inlined");
                             }
                         }
                         // Don't give intrinsics the extra penalty for calls
                         let f = tcx.fn_sig(def_id);
-                        if f.abi() == Abi::RustIntrinsic || f.abi() == Abi::PlatformIntrinsic {
+                        if mutate_condition!(f.abi() == Abi::RustIntrinsic || f.abi() == Abi::PlatformIntrinsic, 202) {
                             cost += INSTR_COST;
                         } else {
                             cost += CALL_PENALTY;
@@ -427,14 +427,14 @@ impl<'tcx> Inliner<'tcx> {
                     } else {
                         cost += CALL_PENALTY;
                     }
-                    if cleanup.is_some() {
+                    if mutate_condition!(cleanup.is_some(), 203) {
                         cost += LANDINGPAD_PENALTY;
                     }
                 }
                 TerminatorKind::Assert { cleanup, .. } => {
                     cost += CALL_PENALTY;
 
-                    if cleanup.is_some() {
+                    if mutate_condition!(cleanup.is_some(), 204) {
                         cost += LANDINGPAD_PENALTY;
                     }
                 }
@@ -442,14 +442,14 @@ impl<'tcx> Inliner<'tcx> {
                 TerminatorKind::InlineAsm { cleanup, .. } => {
                     cost += INSTR_COST;
 
-                    if cleanup.is_some() {
+                    if mutate_condition!(cleanup.is_some(), 205) {
                         cost += LANDINGPAD_PENALTY;
                     }
                 }
                 _ => cost += INSTR_COST,
             }
 
-            if !is_drop {
+            if mutate_condition!(!is_drop, 206) {
                 for &succ in term.successors() {
                     work_list.push(succ);
                 }
@@ -478,7 +478,7 @@ impl<'tcx> Inliner<'tcx> {
             debug!("INLINING {:?} because inline(always) [cost={}]", callsite, cost);
             Ok(())
         } else {
-            if cost <= threshold {
+            if mutate_condition!(cost <= threshold, 207) {
                 debug!("INLINING {:?} [cost={} <= threshold={}]", callsite, cost, threshold);
                 Ok(())
             } else {
@@ -514,7 +514,7 @@ impl<'tcx> Inliner<'tcx> {
                 }
 
                 let dest = if let Some((destination_place, _)) = destination {
-                    if dest_needs_borrow(destination_place) {
+                    if mutate_condition!(dest_needs_borrow(destination_place), 208) {
                         trace!("creating temp for return destination");
                         let dest = Rvalue::Ref(
                             self.tcx.lifetimes.re_erased,
@@ -569,14 +569,14 @@ impl<'tcx> Inliner<'tcx> {
 
                 for scope in &mut callee_body.source_scopes {
                     // FIXME(eddyb) move this into a `fn visit_scope_data` in `Integrator`.
-                    if scope.parent_scope.is_none() {
+                    if mutate_condition!(scope.parent_scope.is_none(), 209) {
                         let callsite_scope = &caller_body.source_scopes[callsite.source_info.scope];
 
                         // Attach the outermost callee scope as a child of the callsite
                         // scope, via the `parent_scope` and `inlined_parent_scope` chains.
                         scope.parent_scope = Some(callsite.source_info.scope);
                         assert_eq!(scope.inlined_parent_scope, None);
-                        scope.inlined_parent_scope = if callsite_scope.inlined.is_some() {
+                        scope.inlined_parent_scope = if mutate_condition!(callsite_scope.inlined.is_some(), 210) {
                             Some(callsite.source_info.scope)
                         } else {
                             callsite_scope.inlined_parent_scope
@@ -585,7 +585,7 @@ impl<'tcx> Inliner<'tcx> {
                         // Mark the outermost callee scope as an inlined one.
                         assert_eq!(scope.inlined, None);
                         scope.inlined = Some((callsite.callee, callsite.source_info.span));
-                    } else if scope.inlined_parent_scope.is_none() {
+                    } else if mutate_condition!(scope.inlined_parent_scope.is_none(), 211) {
                         // Make it easy to find the scope with `inlined` set above.
                         scope.inlined_parent_scope =
                             Some(integrator.map_scope(OUTERMOST_SOURCE_SCOPE));
@@ -595,7 +595,7 @@ impl<'tcx> Inliner<'tcx> {
                 // If there are any locals without storage markers, give them storage only for the
                 // duration of the call.
                 for local in callee_body.vars_and_temps_iter() {
-                    if integrator.always_live_locals.contains(local) {
+                    if mutate_condition!(integrator.always_live_locals.contains(local), 212) {
                         let new_local = integrator.map_local(local);
                         caller_body[callsite.block].statements.push(Statement {
                             source_info: callsite.source_info,
@@ -608,7 +608,7 @@ impl<'tcx> Inliner<'tcx> {
                     // the slice once.
                     let mut n = 0;
                     for local in callee_body.vars_and_temps_iter().rev() {
-                        if integrator.always_live_locals.contains(local) {
+                        if mutate_condition!(integrator.always_live_locals.contains(local), 213) {
                             let new_local = integrator.map_local(local);
                             caller_body[block].statements.push(Statement {
                                 source_info: callsite.source_info,
@@ -680,7 +680,7 @@ impl<'tcx> Inliner<'tcx> {
         //     tmp2 = tuple_tmp.2
         //
         // and the vector is `[closure_ref, tmp0, tmp1, tmp2]`.
-        if callsite.fn_sig.abi() == Abi::RustCall && callee_body.spread_arg.is_none() {
+        if mutate_condition!(callsite.fn_sig.abi() == Abi::RustCall && callee_body.spread_arg.is_none(), 214) {
             let mut args = args.into_iter();
             let self_ = self.create_temp_if_necessary(args.next().unwrap(), callsite, caller_body);
             let tuple = self.create_temp_if_necessary(args.next().unwrap(), callsite, caller_body);
@@ -797,11 +797,11 @@ struct Integrator<'a, 'tcx> {
 
 impl Integrator<'_, '_> {
     fn map_local(&self, local: Local) -> Local {
-        let new = if local == RETURN_PLACE {
+        let new = if mutate_condition!(local == RETURN_PLACE, 215) {
             self.destination.local
         } else {
             let idx = local.index() - 1;
-            if idx < self.args.len() {
+            if mutate_condition!(idx < self.args.len(), 216) {
                 self.args[idx]
             } else {
                 Local::new(self.new_locals.start.index() + (idx - self.args.len()))
@@ -851,7 +851,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
 
         // If this is the `RETURN_PLACE`, we need to rebase any projections onto it.
         let dest_proj_len = self.destination.projection.len();
-        if place.local == RETURN_PLACE && dest_proj_len > 0 {
+        if mutate_condition!(place.local == RETURN_PLACE && dest_proj_len > 0, 217) {
             let mut projs = Vec::with_capacity(dest_proj_len + place.projection.len());
             projs.extend(self.destination.projection);
             projs.extend(place.projection);
@@ -874,7 +874,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
 
         // We have to patch all inlined retags to be aware that they are no longer
         // happening on function entry.
-        if *kind == RetagKind::FnEntry {
+        if mutate_condition!(*kind == RetagKind::FnEntry, 218) {
             *kind = RetagKind::Default;
         }
     }
@@ -891,7 +891,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
     fn visit_terminator(&mut self, terminator: &mut Terminator<'tcx>, loc: Location) {
         // Don't try to modify the implicit `_0` access on return (`return` terminators are
         // replaced down below anyways).
-        if !matches!(terminator.kind, TerminatorKind::Return) {
+        if mutate_condition!(!matches!(terminator.kind, TerminatorKind::Return), 219) {
             self.super_terminator(terminator, loc);
         }
 
@@ -910,7 +910,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
                 *target = self.map_block(*target);
                 if let Some(tgt) = *unwind {
                     *unwind = Some(self.map_block(tgt));
-                } else if !self.in_cleanup_block {
+                } else if mutate_condition!(!self.in_cleanup_block, 220) {
                     // Unless this drop is in a cleanup block, add an unwind edge to
                     // the original call's cleanup block
                     *unwind = self.cleanup_block;
@@ -922,7 +922,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
                 }
                 if let Some(tgt) = *cleanup {
                     *cleanup = Some(self.map_block(tgt));
-                } else if !self.in_cleanup_block {
+                } else if mutate_condition!(!self.in_cleanup_block, 221) {
                     // Unless this call is in a cleanup block, add an unwind edge to
                     // the original call's cleanup block
                     *cleanup = self.cleanup_block;
@@ -932,7 +932,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
                 *target = self.map_block(*target);
                 if let Some(tgt) = *cleanup {
                     *cleanup = Some(self.map_block(tgt));
-                } else if !self.in_cleanup_block {
+                } else if mutate_condition!(!self.in_cleanup_block, 222) {
                     // Unless this assert is in a cleanup block, add an unwind edge to
                     // the original call's cleanup block
                     *cleanup = self.cleanup_block;
@@ -964,7 +964,7 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
             TerminatorKind::InlineAsm { ref mut destination, ref mut cleanup, .. } => {
                 if let Some(ref mut tgt) = *destination {
                     *tgt = self.map_block(*tgt);
-                } else if !self.in_cleanup_block {
+                } else if mutate_condition!(!self.in_cleanup_block, 223) {
                     // Unless this inline asm is in a cleanup block, add an unwind edge to
                     // the original call's cleanup block
                     *cleanup = self.cleanup_block;

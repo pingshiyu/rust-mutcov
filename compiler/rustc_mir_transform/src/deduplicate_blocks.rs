@@ -24,7 +24,7 @@ impl<'tcx> MirPass<'tcx> for DeduplicateBlocks {
         let duplicates = find_duplicates(body);
         let has_opts_to_apply = !duplicates.is_empty();
 
-        if has_opts_to_apply {
+        if mutate_condition!(has_opts_to_apply, 97) {
             let mut opt_applier = OptApplier { tcx, duplicates };
             opt_applier.visit_body(body);
             simplify_cfg(tcx, body);
@@ -76,7 +76,7 @@ fn find_duplicates(body: &Body<'_>) -> FxHashMap<BasicBlock, BasicBlock> {
         // Basic blocks can get really big, so to avoid checking for duplicates in basic blocks
         // that are unlikely to have duplicates, we stop early. The early bail number has been
         // found experimentally by eprintln while compiling the crates in the rustc-perf suite.
-        if bbd.statements.len() > 10 {
+        if mutate_condition!(bbd.statements.len() > 10, 98) {
             continue;
         }
 

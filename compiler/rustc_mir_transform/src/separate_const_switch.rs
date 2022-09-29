@@ -52,7 +52,7 @@ impl<'tcx> MirPass<'tcx> for SeparateConstSwitch {
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         // If execution did something, applying a simplification layer
         // helps later passes optimize the copy away.
-        if separate_const_switch(body) > 0 {
+        if mutate_condition!(separate_const_switch(body) > 0, 303) {
             super::simplify::simplify_cfg(tcx, body);
         }
     }
@@ -71,14 +71,14 @@ pub fn separate_const_switch(body: &mut Body<'_>) -> usize {
             // If the block is on an unwind path, do not
             // apply the optimization as unwind paths
             // rely on a unique parent invariant
-            if block.is_cleanup {
+            if mutate_condition!(block.is_cleanup, 304) {
                 continue 'block_iter;
             }
 
             // If the block has fewer than 2 predecessors, ignore it
             // we could maybe chain blocks that have exactly one
             // predecessor, but for now we ignore that
-            if predecessors[block_id].len() < 2 {
+            if mutate_condition!(predecessors[block_id].len() < 2, 305) {
                 continue 'block_iter;
             }
 
@@ -100,7 +100,7 @@ pub fn separate_const_switch(body: &mut Body<'_>) -> usize {
                         TerminatorKind::Goto { .. } | TerminatorKind::SwitchInt { .. } => {}
 
                         TerminatorKind::FalseEdge { real_target, .. } => {
-                            if *real_target != block_id {
+                            if mutate_condition!(*real_target != block_id, 306) {
                                 continue 'predec_iter;
                             }
                         }
@@ -122,10 +122,10 @@ pub fn separate_const_switch(body: &mut Body<'_>) -> usize {
                         }
                     }
 
-                    if is_likely_const(switch_place, predecessor) {
+                    if mutate_condition!(is_likely_const(switch_place, predecessor), 307) {
                         new_blocks.push((predecessor_id, block_id));
                         predecessors_left -= 1;
-                        if predecessors_left < 2 {
+                        if mutate_condition!(predecessors_left < 2, 308) {
                             // If the original block only has one predecessor left,
                             // we have nothing left to do
                             break 'predec_iter;
@@ -151,14 +151,14 @@ pub fn separate_const_switch(body: &mut Body<'_>) -> usize {
             }
 
             TerminatorKind::FalseEdge { ref mut real_target, .. } => {
-                if *real_target == target_id {
+                if mutate_condition!(*real_target == target_id, 309) {
                     *real_target = new_block_id;
                 }
             }
 
             TerminatorKind::SwitchInt { ref mut targets, .. } => {
                 targets.all_targets_mut().iter_mut().for_each(|x| {
-                    if *x == target_id {
+                    if mutate_condition!(*x == target_id, 310) {
                         *x = new_block_id;
                     }
                 });
@@ -196,7 +196,7 @@ fn is_likely_const<'tcx>(mut tracked_place: Place<'tcx>, block: &BasicBlockData<
     for statement in block.statements.iter().rev() {
         match &statement.kind {
             StatementKind::Assign(assign) => {
-                if assign.0 == tracked_place {
+                if mutate_condition!(assign.0 == tracked_place, 311) {
                     match assign.1 {
                         // These rvalues are definitely constant
                         Rvalue::Use(Operand::Constant(_))
@@ -234,7 +234,7 @@ fn is_likely_const<'tcx>(mut tracked_place: Place<'tcx>, block: &BasicBlockData<
             // its content, we would have had to at least cast it to
             // some variant first)
             StatementKind::SetDiscriminant { place, .. } => {
-                if **place == tracked_place {
+                if mutate_condition!(**place == tracked_place, 312) {
                     return true;
                 }
             }
@@ -270,7 +270,7 @@ fn find_determining_place<'tcx>(
     for statement in block.statements.iter().rev() {
         match &statement.kind {
             StatementKind::Assign(op) => {
-                if op.0 != switch_place {
+                if mutate_condition!(op.0 != switch_place, 313) {
                     continue;
                 }
 
@@ -328,7 +328,7 @@ fn find_determining_place<'tcx>(
             // its content, we would have had to at least cast it to
             // some variant first)
             StatementKind::SetDiscriminant { place, .. } => {
-                if **place == switch_place {
+                if mutate_condition!(**place == switch_place, 314) {
                     return None;
                 }
             }

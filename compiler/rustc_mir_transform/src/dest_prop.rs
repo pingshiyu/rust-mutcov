@@ -129,7 +129,7 @@ impl<'tcx> MirPass<'tcx> for DestinationPropagation {
         let def_id = body.source.def_id();
 
         let candidates = find_candidates(body);
-        if candidates.is_empty() {
+        if mutate_condition!(candidates.is_empty(), 102) {
             debug!("{:?}: no dest prop candidates, done", def_id);
             return;
         }
@@ -152,14 +152,14 @@ impl<'tcx> MirPass<'tcx> for DestinationPropagation {
             relevant,
             body.basic_blocks().len()
         );
-        if relevant > MAX_LOCALS {
+        if mutate_condition!(relevant > MAX_LOCALS, 103) {
             warn!(
                 "too many candidate locals in {:?} ({}, max is {}), not optimizing",
                 def_id, relevant, MAX_LOCALS
             );
             return;
         }
-        if body.basic_blocks().len() > MAX_BLOCKS {
+        if mutate_condition!(body.basic_blocks().len() > MAX_BLOCKS, 104) {
             warn!(
                 "too many blocks in {:?} ({}, max is {}), not optimizing",
                 def_id,
@@ -174,17 +174,17 @@ impl<'tcx> MirPass<'tcx> for DestinationPropagation {
         let mut replacements = Replacements::new(body.local_decls.len());
         for candidate @ CandidateAssignment { dest, src, loc } in candidates {
             // Merge locals that don't conflict.
-            if !conflicts.can_unify(dest.local, src) {
+            if mutate_condition!(!conflicts.can_unify(dest.local, src), 105) {
                 debug!("at assignment {:?}, conflict {:?} vs. {:?}", loc, dest.local, src);
                 continue;
             }
 
-            if replacements.for_src(candidate.src).is_some() {
+            if mutate_condition!(replacements.for_src(candidate.src).is_some(), 106) {
                 debug!("src {:?} already has replacement", candidate.src);
                 continue;
             }
 
-            if !tcx.consider_optimizing(|| {
+            if mutate_condition!(!tcx.consider_optimizing(||, 107) {
                 format!("DestinationPropagation {:?} {:?}", def_id, candidate)
             }) {
                 break;
@@ -298,7 +298,7 @@ impl<'tcx> MutVisitor<'tcx> for Replacer<'tcx> {
     }
 
     fn visit_local(&mut self, local: &mut Local, context: PlaceContext, location: Location) {
-        if context.is_use() && self.replacements.for_src(*local).is_some() {
+        if mutate_condition!(context.is_use() && self.replacements.for_src(*local).is_some(), 108) {
             bug!(
                 "use of local {:?} should have been replaced by visit_place; context={:?}, loc={:?}",
                 local,
@@ -339,7 +339,7 @@ impl<'tcx> MutVisitor<'tcx> for Replacer<'tcx> {
                     Rvalue::Use(Operand::Copy(place) | Operand::Move(place)) => {
                         // These might've been turned into self-assignments by the replacement
                         // (this includes the original statement we wanted to eliminate).
-                        if dest == place {
+                        if mutate_condition!(dest == place, 109) {
                             debug!("{:?} turned into self-assignment, deleting", location);
                             statement.make_nop();
                         }
@@ -393,14 +393,14 @@ impl<'a> Conflicts<'a> {
             let reachable = reachable.get_or_insert_with(|| traversal::reachable_as_bitset(body));
 
             match pass_where {
-                PassWhere::BeforeLocation(loc) if reachable.contains(loc.block) => {
+                PassWhere::BeforeLocation(loc) if mutate_condition!(reachable.contains(loc.block) =>, 110) {
                     init.seek_before_primary_effect(loc);
                     live.seek_after_primary_effect(loc);
 
                     writeln!(w, "        // init: {:?}", init.get())?;
                     writeln!(w, "        // live: {:?}", live.get())?;
                 }
-                PassWhere::AfterTerminator(bb) if reachable.contains(bb) => {
+                PassWhere::AfterTerminator(bb) if mutate_condition!(reachable.contains(bb) =>, 111) {
                     let loc = body.terminator_loc(bb);
                     init.seek_after_primary_effect(loc);
                     live.seek_before_primary_effect(loc);
@@ -409,7 +409,7 @@ impl<'a> Conflicts<'a> {
                     writeln!(w, "        // live: {:?}", live.get())?;
                 }
 
-                PassWhere::BeforeBlock(bb) if reachable.contains(bb) => {
+                PassWhere::BeforeBlock(bb) if mutate_condition!(reachable.contains(bb) =>, 112) {
                     init.seek_to_block_start(bb);
                     live.seek_to_block_start(bb);
 
@@ -563,7 +563,7 @@ impl<'a> Conflicts<'a> {
             }
             TerminatorKind::Yield { value, resume: _, resume_arg, drop: _ } => {
                 if let Some(place) = value.place() {
-                    if !place.is_indirect() && !resume_arg.is_indirect() {
+                    if mutate_condition!(!place.is_indirect() && !resume_arg.is_indirect(), 113) {
                         self.record_local_conflict(
                             place.local,
                             resume_arg.local,
@@ -583,7 +583,7 @@ impl<'a> Conflicts<'a> {
                 // No arguments may overlap with the destination.
                 for arg in args.iter().chain(Some(func)) {
                     if let Some(place) = arg.place() {
-                        if !place.is_indirect() && !dest_place.is_indirect() {
+                        if mutate_condition!(!place.is_indirect() && !dest_place.is_indirect(), 114) {
                             self.record_local_conflict(
                                 dest_place.local,
                                 place.local,
@@ -632,7 +632,7 @@ impl<'a> Conflicts<'a> {
                                         late: _,
                                         place: Some(place),
                                     } => {
-                                        if !place.is_indirect() && !dest_place.is_indirect() {
+                                        if mutate_condition!(!place.is_indirect() && !dest_place.is_indirect(), 115) {
                                             self.record_local_conflict(
                                                 place.local,
                                                 dest_place.local,
@@ -712,12 +712,12 @@ impl<'a> Conflicts<'a> {
         let a = self.unified_locals.find(a).0;
         let b = self.unified_locals.find(b).0;
 
-        if a == b {
+        if mutate_condition!(a == b, 116) {
             // Already merged (part of the same connected component).
             return false;
         }
 
-        if self.matrix.contains(a, b) {
+        if mutate_condition!(self.matrix.contains(a, b), 117) {
             // Conflict (derived via dataflow, intra-statement conflicts, or inherited from another
             // local during unification).
             return false;
@@ -827,17 +827,17 @@ impl<'tcx> Visitor<'tcx> for FindAssignments<'_, 'tcx> {
         )) = &statement.kind
         {
             // `dest` must not have pointer indirection.
-            if dest.is_indirect() {
+            if mutate_condition!(dest.is_indirect(), 118) {
                 return;
             }
 
             // `src` must be a plain local.
-            if !src.projection.is_empty() {
+            if mutate_condition!(!src.projection.is_empty(), 119) {
                 return;
             }
 
             // Since we want to replace `src` with `dest`, `src` must not be required.
-            if is_local_required(src.local, self.body) {
+            if mutate_condition!(is_local_required(src.local, self.body), 120) {
                 return;
             }
 
@@ -855,7 +855,7 @@ impl<'tcx> Visitor<'tcx> for FindAssignments<'_, 'tcx> {
             assert_ne!(dest.local, src.local, "self-assignments are UB");
 
             // We can't replace locals occurring in `PlaceElem::Index` for now.
-            if self.locals_used_as_array_index.contains(src.local) {
+            if mutate_condition!(self.locals_used_as_array_index.contains(src.local), 121) {
                 return;
             }
 
@@ -903,7 +903,7 @@ impl<'tcx> Visitor<'tcx> for BorrowCollector {
 
         match rvalue {
             Rvalue::AddressOf(_, borrowed_place) | Rvalue::Ref(_, _, borrowed_place) => {
-                if !borrowed_place.is_indirect() {
+                if mutate_condition!(!borrowed_place.is_indirect(), 122) {
                     self.locals.insert(borrowed_place.local);
                 }
             }

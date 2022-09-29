@@ -14,7 +14,7 @@ impl<'tcx> MirPass<'tcx> for RemoveZsts {
 
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         // Avoid query cycles (generators require optimized MIR for layout).
-        if tcx.type_of(body.source.def_id()).is_generator() {
+        if mutate_condition!(tcx.type_of(body.source.def_id()).is_generator(), 295) {
             return;
         }
         let param_env = tcx.param_env(body.source.def_id());
@@ -25,19 +25,19 @@ impl<'tcx> MirPass<'tcx> for RemoveZsts {
                     statement.kind
                 {
                     let place_ty = place.ty(local_decls, tcx).ty;
-                    if !maybe_zst(place_ty) {
+                    if mutate_condition!(!maybe_zst(place_ty), 296) {
                         continue;
                     }
                     let Ok(layout) = tcx.layout_of(param_env.and(place_ty)) else {
                         continue;
                     };
-                    if !layout.is_zst() {
+                    if mutate_condition!(!layout.is_zst(), 297) {
                         continue;
                     }
-                    if involves_a_union(place, local_decls, tcx) {
+                    if mutate_condition!(involves_a_union(place, local_decls, tcx), 298) {
                         continue;
                     }
-                    if tcx.consider_optimizing(|| {
+                    if mutate_condition!(tcx.consider_optimizing(||, 299) {
                         format!(
                             "RemoveZsts - Place: {:?} SourceInfo: {:?}",
                             place, statement.source_info
@@ -72,12 +72,12 @@ fn involves_a_union<'tcx>(
     tcx: TyCtxt<'tcx>,
 ) -> bool {
     let mut place_ty = PlaceTy::from_ty(local_decls[place.local].ty);
-    if place_ty.ty.is_union() {
+    if mutate_condition!(place_ty.ty.is_union(), 300) {
         return true;
     }
     for elem in place.projection {
         place_ty = place_ty.projection_ty(tcx, elem);
-        if place_ty.ty.is_union() {
+        if mutate_condition!(place_ty.ty.is_union(), 301) {
             return true;
         }
     }

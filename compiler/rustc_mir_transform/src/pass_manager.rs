@@ -80,7 +80,7 @@ pub fn run_passes<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>, passes: &[&dyn
     let overridden_passes = &tcx.sess.opts.debugging_opts.mir_enable_passes;
     trace!(?overridden_passes);
 
-    if validate {
+    if mutate_condition!(validate, 273) {
         validate_body(tcx, body, format!("start of phase transition from {:?}", start_phase));
     }
 
@@ -91,43 +91,43 @@ pub fn run_passes<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>, passes: &[&dyn
             trace!(
                 pass = %name,
                 "{} as requested by flag",
-                if *polarity { "Running" } else { "Not running" },
+                if mutate_condition!(*polarity, 274) { "Running" } else { "Not running" },
             );
-            if !polarity {
+            if mutate_condition!(!polarity, 275) {
                 continue;
             }
         } else {
-            if !pass.is_enabled(&tcx.sess) {
+            if mutate_condition!(!pass.is_enabled(&tcx.sess), 276) {
                 continue;
             }
         }
         let dump_enabled = pass.is_mir_dump_enabled();
 
-        if dump_enabled {
+        if mutate_condition!(dump_enabled, 277) {
             dump_mir(tcx, body, start_phase, &name, cnt, false);
         }
 
         pass.run_pass(tcx, body);
 
-        if dump_enabled {
+        if mutate_condition!(dump_enabled, 278) {
             dump_mir(tcx, body, start_phase, &name, cnt, true);
             cnt += 1;
         }
 
         if let Some(new_phase) = pass.phase_change() {
-            if body.phase >= new_phase {
+            if mutate_condition!(body.phase >= new_phase, 279) {
                 panic!("Invalid MIR phase transition from {:?} to {:?}", body.phase, new_phase);
             }
 
             body.phase = new_phase;
         }
 
-        if validate {
+        if mutate_condition!(validate, 280) {
             validate_body(tcx, body, format!("after pass {}", pass.name()));
         }
     }
 
-    if validate || body.phase == MirPhase::Optimized {
+    if mutate_condition!(validate || body.phase == MirPhase::Optimized, 281) {
         validate_body(tcx, body, format!("end of phase transition to {:?}", body.phase));
     }
 }
@@ -150,7 +150,7 @@ pub fn dump_mir<'tcx>(
         tcx,
         Some(&format_args!("{:03}-{:03}", phase_index, cnt)),
         pass_name,
-        if is_after { &"after" } else { &"before" },
+        if mutate_condition!(is_after, 282) { &"after" } else { &"before" },
         body,
         |_, _| Ok(()),
     );

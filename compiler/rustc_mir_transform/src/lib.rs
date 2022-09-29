@@ -179,7 +179,7 @@ fn mir_const_qualif(tcx: TyCtxt<'_>, def: ty::WithOptConstParam<LocalDefId>) -> 
     let const_kind = tcx.hir().body_const_context(def.did);
 
     // No need to const-check a non-const `fn`.
-    if const_kind.is_none() {
+    if mutate_condition!(const_kind.is_none(), 232) {
         return Default::default();
     }
 
@@ -189,7 +189,7 @@ fn mir_const_qualif(tcx: TyCtxt<'_>, def: ty::WithOptConstParam<LocalDefId>) -> 
     // performing the steal.
     let body = &tcx.mir_const(def).borrow();
 
-    if body.return_ty().references_error() {
+    if mutate_condition!(body.return_ty().references_error(), 233) {
         tcx.sess.delay_span_bug(body.span, "mir_const_qualif: MIR had errors");
         return Default::default();
     }
@@ -214,7 +214,7 @@ fn mir_const<'tcx>(
     }
 
     // Unsafety check uses the raw mir, so make sure it is run.
-    if !tcx.sess.opts.debugging_opts.thir_unsafeck {
+    if mutate_condition!(!tcx.sess.opts.debugging_opts.thir_unsafeck, 234) {
         if let Some(param_did) = def.const_param_did {
             tcx.ensure().unsafety_check_result_for_const_arg((def.did, param_did));
         } else {
@@ -311,7 +311,7 @@ fn mir_for_ctfe_of_const_arg<'tcx>(
 
 fn inner_mir_for_ctfe(tcx: TyCtxt<'_>, def: ty::WithOptConstParam<LocalDefId>) -> Body<'_> {
     // FIXME: don't duplicate this between the optimized_mir/mir_for_ctfe queries
-    if tcx.is_constructor(def.did.to_def_id()) {
+    if mutate_condition!(tcx.is_constructor(def.did.to_def_id()), 235) {
         // There's no reason to run all of the MIR passes on constructors when
         // we can just output the MIR we want directly. This also saves const
         // qualification and borrow checking the trouble of special casing
@@ -367,12 +367,12 @@ fn mir_drops_elaborated_and_const_checked<'tcx>(
     let mir_borrowck = tcx.mir_borrowck_opt_const_arg(def);
 
     let is_fn_like = tcx.def_kind(def.did).is_fn_like();
-    if is_fn_like {
+    if mutate_condition!(is_fn_like, 236) {
         let did = def.did.to_def_id();
         let def = ty::WithOptConstParam::unknown(did);
 
         // Do not compute the mir call graph without said call graph actually being used.
-        if inline::Inline.is_enabled(&tcx.sess) {
+        if mutate_condition!(inline::Inline.is_enabled(&tcx.sess), 237) {
             let _ = tcx.mir_inliner_callees(ty::InstanceDef::Item(def));
         }
     }
@@ -387,7 +387,7 @@ fn mir_drops_elaborated_and_const_checked<'tcx>(
     pm::run_passes(tcx, &mut body, &[&remove_false_edges::RemoveFalseEdges]);
 
     // Do a little drop elaboration before const-checking if `const_precise_live_drops` is enabled.
-    if check_consts::post_drop_elaboration::checking_enabled(&ConstCx::new(tcx, &body)) {
+    if mutate_condition!(check_consts::post_drop_elaboration::checking_enabled(&ConstCx::new(tcx, &body)), 238) {
         pm::run_passes(
             tcx,
             &mut body,
@@ -514,7 +514,7 @@ fn optimized_mir<'tcx>(tcx: TyCtxt<'tcx>, did: DefId) -> &'tcx Body<'tcx> {
 }
 
 fn inner_optimized_mir(tcx: TyCtxt<'_>, did: LocalDefId) -> Body<'_> {
-    if tcx.is_constructor(did.to_def_id()) {
+    if mutate_condition!(tcx.is_constructor(did.to_def_id()), 239) {
         // There's no reason to run all of the MIR passes on constructors when
         // we can just output the MIR we want directly. This also saves const
         // qualification and borrow checking the trouble of special casing
@@ -545,7 +545,7 @@ fn promoted_mir<'tcx>(
     tcx: TyCtxt<'tcx>,
     def: ty::WithOptConstParam<LocalDefId>,
 ) -> &'tcx IndexVec<Promoted, Body<'tcx>> {
-    if tcx.is_constructor(def.did.to_def_id()) {
+    if mutate_condition!(tcx.is_constructor(def.did.to_def_id()), 240) {
         return tcx.arena.alloc(IndexVec::new());
     }
 

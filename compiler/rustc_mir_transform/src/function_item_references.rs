@@ -46,7 +46,7 @@ impl<'tcx> Visitor<'tcx> for FunctionItemRefChecker<'_, 'tcx> {
             let func_ty = func.ty(self.body, self.tcx);
             if let ty::FnDef(def_id, substs_ref) = *func_ty.kind() {
                 // Handle calls to `transmute`
-                if self.tcx.is_diagnostic_item(sym::transmute, def_id) {
+                if mutate_condition!(self.tcx.is_diagnostic_item(sym::transmute, def_id), 142) {
                     let arg_ty = args[0].ty(self.body, self.tcx);
                     for generic_inner_ty in arg_ty.walk() {
                         if let GenericArgKind::Type(inner_ty) = generic_inner_ty.unpack() {
@@ -88,14 +88,14 @@ impl<'tcx> FunctionItemRefChecker<'_, 'tcx> {
                     for generic_inner_ty in arg_def.walk() {
                         if let GenericArgKind::Type(inner_ty) = generic_inner_ty.unpack() {
                             // If the inner type matches the type bound by `Pointer`
-                            if inner_ty == bound_ty {
+                            if mutate_condition!(inner_ty == bound_ty, 143) {
                                 // Do a substitution using the parameters from the callsite
                                 let subst_ty = EarlyBinder(inner_ty).subst(self.tcx, substs_ref);
                                 if let Some((fn_id, fn_substs)) =
                                     FunctionItemRefChecker::is_fn_ref(subst_ty)
                                 {
                                     let mut span = self.nth_arg_span(args, arg_num);
-                                    if span.from_expansion() {
+                                    if mutate_condition!(span.from_expansion(), 144) {
                                         // The operand's ctxt wouldn't display the lint since it's inside a macro so
                                         // we have to use the callsite's ctxt.
                                         let callsite_ctxt = span.source_callsite().ctxt();
@@ -114,7 +114,7 @@ impl<'tcx> FunctionItemRefChecker<'_, 'tcx> {
     /// If the given predicate is the trait `fmt::Pointer`, returns the bound parameter type.
     fn is_pointer_trait(&self, bound: &PredicateKind<'tcx>) -> Option<Ty<'tcx>> {
         if let ty::PredicateKind::Trait(predicate) = bound {
-            if self.tcx.is_diagnostic_item(sym::Pointer, predicate.def_id()) {
+            if mutate_condition!(self.tcx.is_diagnostic_item(sym::Pointer, predicate.def_id()), 145) {
                 Some(predicate.trait_ref.self_ty())
             } else {
                 None
@@ -180,8 +180,8 @@ impl<'tcx> FunctionItemRefChecker<'_, 'tcx> {
         let const_params = fn_substs.consts().map(|c| format!("{}", c));
         let params = ty_params.chain(const_params).join(", ");
         let num_args = fn_sig.inputs().map_bound(|inputs| inputs.len()).skip_binder();
-        let variadic = if fn_sig.c_variadic() { ", ..." } else { "" };
-        let ret = if fn_sig.output().skip_binder().is_unit() { "" } else { " -> _" };
+        let variadic = if mutate_condition!(fn_sig.c_variadic(), 146) { ", ..." } else { "" };
+        let ret = if mutate_condition!(fn_sig.output().skip_binder().is_unit(), 147) { "" } else { " -> _" };
         self.tcx.struct_span_lint_hir(FUNCTION_ITEM_REFERENCES, lint_root, span, |lint| {
             lint.build("taking a reference to a function item does not give a function pointer")
                 .span_suggestion(
@@ -189,7 +189,7 @@ impl<'tcx> FunctionItemRefChecker<'_, 'tcx> {
                     &format!("cast `{}` to obtain a function pointer", ident),
                     format!(
                         "{} as {}{}fn({}{}){}",
-                        if params.is_empty() { ident } else { format!("{}::<{}>", ident, params) },
+                        if mutate_condition!(params.is_empty(), 148) { ident } else { format!("{}::<{}>", ident, params) },
                         unsafety,
                         abi,
                         vec!["_"; num_args].join(", "),

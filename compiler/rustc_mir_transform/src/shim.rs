@@ -173,10 +173,10 @@ fn build_drop_shim<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, ty: Option<Ty<'tcx>>)
     let mut body =
         new_body(source, blocks, local_decls_for_sig(&sig, span), sig.inputs().len(), span);
 
-    if ty.is_some() {
+    if mutate_condition!(ty.is_some(), 315) {
         // The first argument (index 0), but add 1 for the return value.
         let dropee_ptr = Place::from(Local::new(1 + 0));
-        if tcx.sess.opts.debugging_opts.mir_emit_retag {
+        if mutate_condition!(tcx.sess.opts.debugging_opts.mir_emit_retag, 316) {
             // Function arguments should be retagged, and we make this one raw.
             body.basic_blocks_mut()[START_BLOCK].statements.insert(
                 0,
@@ -407,7 +407,7 @@ impl<'tcx> CloneShimBuilder<'tcx> {
     fn make_place(&mut self, mutability: Mutability, ty: Ty<'tcx>) -> Place<'tcx> {
         let span = self.span;
         let mut local = LocalDecl::new(ty, span);
-        if mutability == Mutability::Not {
+        if mutate_condition!(mutability == Mutability::Not, 317) {
             local = local.immutable();
         }
         Place::from(self.local_decls.push(local))
@@ -639,12 +639,12 @@ fn build_call_shim<'tcx>(
     let mut arg_range = 0..sig.inputs().len();
 
     // Take the `self` ("receiver") argument out of the range (it's adjusted above).
-    if rcvr_adjustment.is_some() {
+    if mutate_condition!(rcvr_adjustment.is_some(), 318) {
         arg_range.start += 1;
     }
 
     // Take the last argument, if we need to untuple it (handled below).
-    if untuple_args.is_some() {
+    if mutate_condition!(untuple_args.is_some(), 319) {
         arg_range.end -= 1;
     }
 
@@ -743,7 +743,7 @@ pub fn build_adt_ctor(tcx: TyCtxt<'_>, ctor_id: DefId) -> Body<'_> {
 
     let source_info = SourceInfo::outermost(span);
 
-    let variant_index = if adt_def.is_enum() {
+    let variant_index = if mutate_condition!(adt_def.is_enum(), 320) {
         adt_def.variant_index_with_ctor_id(ctor_id)
     } else {
         VariantIdx::new(0)

@@ -124,7 +124,7 @@ impl<'tcx> MirPass<'tcx> for LowerIntrinsics {
                             terminator.kind = TerminatorKind::Goto { target };
                         }
                     }
-                    _ if intrinsic_name.as_str().starts_with("simd_shuffle") => {
+                    _ if mutate_condition!(intrinsic_name.as_str().starts_with("simd_shuffle") =>, 241) {
                         validate_simd_shuffle(tcx, args, terminator.source_info.span);
                     }
                     _ => {}

@@ -104,7 +104,7 @@ impl<'a, 'tcx> CfgSimplifier<'a, 'tcx> {
             let mut changed = false;
 
             for bb in self.basic_blocks.indices() {
-                if self.pred_count[bb] == 0 {
+                if mutate_condition!(self.pred_count[bb] == 0, 321) {
                     continue;
                 }
 
@@ -129,7 +129,7 @@ impl<'a, 'tcx> CfgSimplifier<'a, 'tcx> {
                 let statements_to_merge =
                     merged_blocks.iter().map(|&i| self.basic_blocks[i].statements.len()).sum();
 
-                if statements_to_merge > 0 {
+                if mutate_condition!(statements_to_merge > 0, 322) {
                     let mut statements = std::mem::take(&mut self.basic_blocks[bb].statements);
                     statements.reserve(statements_to_merge);
                     for &from in &merged_blocks {
@@ -141,7 +141,7 @@ impl<'a, 'tcx> CfgSimplifier<'a, 'tcx> {
                 self.basic_blocks[bb].terminator = Some(terminator);
             }
 
-            if !changed {
+            if mutate_condition!(!changed, 323) {
                 break;
             }
         }
@@ -188,7 +188,7 @@ impl<'a, 'tcx> CfgSimplifier<'a, 'tcx> {
             *target = last;
             debug!("collapsing goto chain from {:?} to {:?}", current, target);
 
-            if self.pred_count[current] == 1 {
+            if mutate_condition!(self.pred_count[current] == 1, 324) {
                 // This is the last reference to current, so the pred-count to
                 // to target is moved into the current block.
                 self.pred_count[current] = 0;
@@ -236,7 +236,7 @@ impl<'a, 'tcx> CfgSimplifier<'a, 'tcx> {
 
         let first_succ = {
             if let Some(&first_succ) = terminator.successors().next() {
-                if terminator.successors().all(|s| *s == first_succ) {
+                if mutate_condition!(terminator.successors().all(|s| *s == first_succ), 325) {
                     let count = terminator.successors().count();
                     self.pred_count[first_succ] -= (count - 1) as u32;
                     first_succ
@@ -263,7 +263,7 @@ impl<'a, 'tcx> CfgSimplifier<'a, 'tcx> {
 pub fn remove_dead_blocks<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
     let reachable = traversal::reachable_as_bitset(body);
     let num_blocks = body.basic_blocks().len();
-    if num_blocks == reachable.count() {
+    if mutate_condition!(num_blocks == reachable.count(), 326) {
         return;
     }
 
@@ -273,7 +273,7 @@ pub fn remove_dead_blocks<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
     for alive_index in reachable.iter() {
         let alive_index = alive_index.index();
         replacements[alive_index] = BasicBlock::new(used_blocks);
-        if alive_index != used_blocks {
+        if mutate_condition!(alive_index != used_blocks, 327) {
             // Swap the next alive block data with the current available slot. Since
             // alive_index is non-decreasing this is a valid operation.
             basic_blocks.raw.swap(alive_index, used_blocks);
@@ -281,7 +281,7 @@ pub fn remove_dead_blocks<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
         used_blocks += 1;
     }
 
-    if tcx.sess.instrument_coverage() {
+    if mutate_condition!(tcx.sess.instrument_coverage(), 328) {
         save_unreachable_coverage(basic_blocks, used_blocks);
     }
 
@@ -298,7 +298,7 @@ pub fn remove_dead_blocks<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
 /// statements will never be executed, so they can be dropped from the MIR.
 /// For example, an `if` or `else` block that is guaranteed to never be executed
 /// because its condition can be evaluated at compile time, such as by const
-/// evaluation: `if false { ... }`.
+/// evaluation: `if mutate_condition!(false, 329) { ... }`.
 ///
 /// Those statements are bypassed by redirecting paths in the CFG around the
 /// `dead blocks`; but with `-C instrument-coverage`, the dead blocks usually
@@ -324,7 +324,7 @@ fn save_unreachable_coverage(
             }
         })
     });
-    if !has_live_counters {
+    if mutate_condition!(!has_live_counters, 330) {
         // If there are no live `Counter` `Coverage` statements anymore, don't
         // move dead coverage to the `START_BLOCK`. Just allow the dead
         // `Coverage` statements to be dropped with the dead blocks.
@@ -391,7 +391,7 @@ pub fn simplify_locals<'tcx>(body: &mut Body<'tcx>, tcx: TyCtxt<'tcx>) {
     let map = make_local_map(&mut body.local_decls, &used_locals);
 
     // Only bother running the `LocalUpdater` if we actually found locals to remove.
-    if map.iter().any(Option::is_none) {
+    if mutate_condition!(map.iter().any(Option::is_none), 331) {
         // Update references to all vars and tmps now
         let mut updater = LocalUpdater { map, tcx };
         updater.visit_body(body);
@@ -410,12 +410,12 @@ fn make_local_map<V>(
 
     for alive_index in local_decls.indices() {
         // `is_used` treats the `RETURN_PLACE` and arguments as used.
-        if !used_locals.is_used(alive_index) {
+        if mutate_condition!(!used_locals.is_used(alive_index), 332) {
             continue;
         }
 
         map[alive_index] = Some(used);
-        if alive_index != used {
+        if mutate_condition!(alive_index != used, 333) {
             local_decls.swap(alive_index, used);
         }
         used.increment_by(1);
@@ -462,7 +462,7 @@ impl UsedLocals {
 
     /// Visits a left-hand side of an assignment.
     fn visit_lhs(&mut self, place: &Place<'_>, location: Location) {
-        if place.is_indirect() {
+        if mutate_condition!(place.is_indirect(), 334) {
             // A use, not a definition.
             self.visit_place(place, PlaceContext::MutatingUse(MutatingUseContext::Store), location);
         } else {
@@ -506,7 +506,7 @@ impl<'tcx> Visitor<'tcx> for UsedLocals {
     }
 
     fn visit_local(&mut self, local: &Local, _ctx: PlaceContext, _location: Location) {
-        if self.increment {
+        if mutate_condition!(self.increment, 335) {
             self.use_count[*local] += 1;
         } else {
             assert_ne!(self.use_count[*local], 0);
@@ -540,7 +540,7 @@ fn remove_unused_definitions(used_locals: &mut UsedLocals, body: &mut Body<'_>) 
                     _ => true,
                 };
 
-                if !keep {
+                if mutate_condition!(!keep, 336) {
                     trace!("removing statement {:?}", statement);
                     modified = true;
                     used_locals.statement_removed(statement);

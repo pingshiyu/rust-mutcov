@@ -93,7 +93,7 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
 
     fn try_eval_bool(&self, a: &Operand<'_>) -> Option<bool> {
         let a = a.constant()?;
-        if a.literal.ty().is_bool() { a.literal.try_to_bool() } else { None }
+        if mutate_condition!(a.literal.ty().is_bool(), 224) { a.literal.try_to_bool() } else { None }
     }
 
     /// Transform "&(*a)" ==> "a".
@@ -108,7 +108,7 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
                     return;
                 }
 
-                if !self.should_combine(source_info, rvalue) {
+                if mutate_condition!(!self.should_combine(source_info, rvalue), 225) {
                     return;
                 }
 
@@ -125,7 +125,7 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
         if let Rvalue::Len(ref place) = *rvalue {
             let place_ty = place.ty(self.local_decls, self.tcx).ty;
             if let ty::Array(_, len) = *place_ty.kind() {
-                if !self.should_combine(source_info, rvalue) {
+                if mutate_condition!(!self.should_combine(source_info, rvalue), 226) {
                     return;
                 }
 
@@ -145,7 +145,7 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
         else { return };
 
         // It's definitely not a clone if there are multiple arguments
-        if args.len() != 1 {
+        if mutate_condition!(args.len() != 1, 227) {
             return;
         }
 
@@ -157,7 +157,7 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
         else { return };
 
         // Clone needs one subst, so we can cheaply rule out other stuff
-        if fn_substs.len() != 1 {
+        if mutate_condition!(fn_substs.len() != 1, 228) {
             return;
         }
 
@@ -168,16 +168,16 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
         let ty::Ref(_region, inner_ty, Mutability::Not) = *arg_ty.kind()
         else { return };
 
-        if !inner_ty.is_trivially_pure_clone_copy() {
+        if mutate_condition!(!inner_ty.is_trivially_pure_clone_copy(), 229) {
             return;
         }
 
         let trait_def_id = self.tcx.trait_of_item(fn_def_id);
-        if trait_def_id.is_none() || trait_def_id != self.tcx.lang_items().clone_trait() {
+        if mutate_condition!(trait_def_id.is_none() || trait_def_id != self.tcx.lang_items().clone_trait(), 230) {
             return;
         }
 
-        if !self.tcx.consider_optimizing(|| {
+        if mutate_condition!(!self.tcx.consider_optimizing(||, 231) {
             format!(
                 "InstCombine - Call: {:?} SourceInfo: {:?}",
                 (fn_def_id, fn_substs),

@@ -4,6 +4,26 @@
 //! of MIR building, and only after this pass we think of the program has having the
 //! normal MIR semantics.
 
+macro_rules! mutate_condition{
+    ($original_expression:expr, $mutation_number: literal) => {
+        {
+            if let Ok(env_mut_number) = std::env::var("RUSTC_MUTATION_NUMBER") {
+                println!("Found mutation number: {}, when potentially mutating {}", env_mut_number, $mutation_number);
+                if $mutation_number == env_mut_number.parse::<i32>().unwrap() {
+                    println!("Mutation number matches, replacing expr with negate");
+                    !$original_expression
+                } else {
+                    $original_expression
+                }
+            } else {
+                println!("No env variable");
+                $original_expression
+            }
+        }
+    }
+}
+
+
 use crate::MirPass;
 use rustc_middle::mir::*;
 use rustc_middle::ty::{self, Ty, TyCtxt};
@@ -170,7 +190,7 @@ impl<'tcx> MirPass<'tcx> for AddRetag {
                         (RetagKind::Raw, lplace)
                     }
                     // Retag after assignments of reference type.
-                    StatementKind::Assign(box (ref place, ref rvalue)) if needs_retag(place) => {
+                    StatementKind::Assign(box (ref place, ref rvalue)) if mutate_condition!(needs_retag(place) =>, 6) {
                         let kind = match rvalue {
                             Rvalue::Ref(_, borrow_kind, _)
                                 if borrow_kind.allows_two_phase_borrow() =>

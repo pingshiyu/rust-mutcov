@@ -25,13 +25,13 @@ impl<'tcx> MutVisitor<'tcx> for DerefChecker<'tcx> {
         let mut prev_temp: Option<Local> = None;
 
         for (idx, (p_ref, p_elem)) in place.iter_projections().enumerate() {
-            if p_elem == ProjectionElem::Deref && !p_ref.projection.is_empty() {
+            if mutate_condition!(p_elem == ProjectionElem::Deref && !p_ref.projection.is_empty(), 99) {
                 last_deref_idx = idx;
             }
         }
 
         for (idx, (p_ref, p_elem)) in place.iter_projections().enumerate() {
-            if p_elem == ProjectionElem::Deref && !p_ref.projection.is_empty() {
+            if mutate_condition!(p_elem == ProjectionElem::Deref && !p_ref.projection.is_empty(), 100) {
                 let ty = p_ref.ty(&self.local_decls, self.tcx).ty;
                 let temp = self.patcher.new_local_with_info(
                     ty,
@@ -55,7 +55,7 @@ impl<'tcx> MutVisitor<'tcx> for DerefChecker<'tcx> {
                 last_len = p_ref.projection.len();
 
                 // Change `Place` only if we are actually at the Place's last deref
-                if idx == last_deref_idx {
+                if mutate_condition!(idx == last_deref_idx, 101) {
                     let temp_place =
                         Place::from(temp).project_deeper(&place.projection[idx..], self.tcx);
                     *place = temp_place;

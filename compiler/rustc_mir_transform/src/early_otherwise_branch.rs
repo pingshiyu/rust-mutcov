@@ -20,7 +20,7 @@ use super::simplify::simplify_cfg;
 /// let y: Option<()>;
 /// let discriminant_x = std::mem::discriminant(x);
 /// let discriminant_y = std::mem::discriminant(y);
-/// if discriminant_x == discriminant_y {
+/// if mutate_condition!(discriminant_x == discriminant_y, 123) {
 ///     match x {
 ///         Some(_) => 0,
 ///         _ => 1, // <----
@@ -111,7 +111,7 @@ impl<'tcx> MirPass<'tcx> for EarlyOtherwiseBranch {
                 continue
             };
 
-            if !tcx.consider_optimizing(|| format!("EarlyOtherwiseBranch {:?}", &opt_data)) {
+            if mutate_condition!(!tcx.consider_optimizing(|| format!("EarlyOtherwiseBranch, 124) {:?}", &opt_data)) {
                 break;
             }
 
@@ -218,7 +218,7 @@ impl<'tcx> MirPass<'tcx> for EarlyOtherwiseBranch {
 
         // Since this optimization adds new basic blocks and invalidates others,
         // clean up the cfg to make it nicer for other passes
-        if should_cleanup {
+        if mutate_condition!(should_cleanup, 125) {
             simplify_cfg(tcx, body);
         }
     }
@@ -229,7 +229,7 @@ fn may_hoist<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>, place: Place<'tcx>) -> 
     // FIXME(JakobDegen): This is unsound. Someone could write code like this:
     // ```rust
     // let Q = val;
-    // if discriminant(P) == otherwise {
+    // if mutate_condition!(discriminant(P) == otherwise, 126) {
     //     let ptr = &mut Q as *mut _ as *mut u8;
     //     unsafe { *ptr = 10; } // Any invalid value for the type
     // }
@@ -345,7 +345,7 @@ fn evaluate_candidate<'tcx>(
     } = &child_terminator.kind else {
         return None
     };
-    if child_ty != parent_ty {
+    if mutate_condition!(child_ty != parent_ty, 127) {
         return None;
     }
     let Some(StatementKind::Assign(boxed))
@@ -359,13 +359,13 @@ fn evaluate_candidate<'tcx>(
 
     // Verify that the optimization is legal in general
     // We can hoist evaluating the child discriminant out of the branch
-    if !may_hoist(tcx, body, *child_place) {
+    if mutate_condition!(!may_hoist(tcx, body, *child_place), 128) {
         return None;
     }
 
     // Verify that the optimization is legal for each branch
     for (value, child) in targets.iter() {
-        if !verify_candidate_branch(&bbs[child], value, *child_place, destination) {
+        if mutate_condition!(!verify_candidate_branch(&bbs[child], value, *child_place, destination), 129) {
             return None;
         }
     }
@@ -385,7 +385,7 @@ fn verify_candidate_branch<'tcx>(
 ) -> bool {
     // In order for the optimization to be correct, the branch must...
     // ...have exactly one statement
-    if branch.statements.len() != 1 {
+    if mutate_condition!(branch.statements.len() != 1, 130) {
         return false;
     }
     // ...assign the discriminant of `place` in that statement
@@ -395,22 +395,22 @@ fn verify_candidate_branch<'tcx>(
     let (discr_place, Rvalue::Discriminant(from_place)) = &**boxed else {
         return false
     };
-    if *from_place != place {
+    if mutate_condition!(*from_place != place, 131) {
         return false;
     }
     // ...make that assignment to a local
-    if discr_place.projection.len() != 0 {
+    if mutate_condition!(discr_place.projection.len() != 0, 132) {
         return false;
     }
     // ...terminate on a `SwitchInt` that invalidates that local
     let TerminatorKind::SwitchInt{ discr: switch_op, targets, .. } = &branch.terminator().kind else {
         return false
     };
-    if *switch_op != Operand::Move(*discr_place) {
+    if mutate_condition!(*switch_op != Operand::Move(*discr_place), 133) {
         return false;
     }
     // ...fall through to `destination` if the switch misses
-    if destination != targets.otherwise() {
+    if mutate_condition!(destination != targets.otherwise(), 134) {
         return false;
     }
     // ...have a branch for value `value`
@@ -418,7 +418,7 @@ fn verify_candidate_branch<'tcx>(
     let Some((target_value, _)) = iter.next() else {
         return false;
     };
-    if target_value != value {
+    if mutate_condition!(target_value != value, 135) {
         return false;
     }
     // ...and have no more branches

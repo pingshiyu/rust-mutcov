@@ -148,7 +148,7 @@ impl<'tcx> Visitor<'tcx> for UnsafetyChecker<'_, 'tcx> {
         // * `&x.field` if `field`'s type has interior mutability
         // because either of these would allow modifying the layout constrained field and
         // insert values that violate the layout constraints.
-        if context.is_mutating_use() || context.is_borrow() {
+        if mutate_condition!(context.is_mutating_use() || context.is_borrow(), 13) {
             self.check_mut_borrowing_layout_constrained_field(*place, context.is_mutating_use());
         }
 
@@ -158,18 +158,18 @@ impl<'tcx> Visitor<'tcx> for UnsafetyChecker<'_, 'tcx> {
         // Check the base local: it might be an unsafe-to-access static. We only check derefs of the
         // temporary holding the static pointer to avoid duplicate errors
         // <https://github.com/rust-lang/rust/pull/78068#issuecomment-731753506>.
-        if decl.internal && place.projection.first() == Some(&ProjectionElem::Deref) {
+        if mutate_condition!(decl.internal && place.projection.first() == Some(&ProjectionElem::Deref), 14) {
             // If the projection root is an artificial local that we introduced when
             // desugaring `static`, give a more specific error message
             // (avoid the general "raw pointer" clause below, that would only be confusing).
             if let Some(box LocalInfo::StaticRef { def_id, .. }) = decl.local_info {
-                if self.tcx.is_mutable_static(def_id) {
+                if mutate_condition!(self.tcx.is_mutable_static(def_id), 15) {
                     self.require_unsafe(
                         UnsafetyViolationKind::General,
                         UnsafetyViolationDetails::UseOfMutableStatic,
                     );
                     return;
-                } else if self.tcx.is_foreign_item(def_id) {
+                } else if mutate_condition!(self.tcx.is_foreign_item(def_id), 16) {
                     self.require_unsafe(
                         UnsafetyViolationKind::General,
                         UnsafetyViolationDetails::UseOfExternStatic,
@@ -181,9 +181,9 @@ impl<'tcx> Visitor<'tcx> for UnsafetyChecker<'_, 'tcx> {
 
         // Check for raw pointer `Deref`.
         for (base, proj) in place.iter_projections() {
-            if proj == ProjectionElem::Deref {
+            if mutate_condition!(proj == ProjectionElem::Deref, 17) {
                 let base_ty = base.ty(self.body, self.tcx).ty;
-                if base_ty.is_unsafe_ptr() {
+                if mutate_condition!(base_ty.is_unsafe_ptr(), 18) {
                     self.require_unsafe(
                         UnsafetyViolationKind::General,
                         UnsafetyViolationDetails::DerefOfRawPointer,
@@ -196,13 +196,13 @@ impl<'tcx> Visitor<'tcx> for UnsafetyChecker<'_, 'tcx> {
         // whether we *read* the union field or potentially *write* to it (if this place is being assigned to).
         let mut saw_deref = false;
         for (base, proj) in place.iter_projections().rev() {
-            if proj == ProjectionElem::Deref {
+            if mutate_condition!(proj == ProjectionElem::Deref, 19) {
                 saw_deref = true;
                 continue;
             }
 
             let base_ty = base.ty(self.body, self.tcx).ty;
-            if base_ty.is_union() {
+            if mutate_condition!(base_ty.is_union(), 20) {
                 // If we did not hit a `Deref` yet and the overall place use is an assignment, the
                 // rules are different.
                 let assign_to_field = !saw_deref
@@ -215,7 +215,7 @@ impl<'tcx> Visitor<'tcx> for UnsafetyChecker<'_, 'tcx> {
                         )
                     );
                 // If this is just an assignment, determine if the assigned type needs dropping.
-                if assign_to_field {
+                if mutate_condition!(assign_to_field, 21) {
                     // We have to check the actual type of the assignment, as that determines if the
                     // old value is being dropped.
                     let assigned_ty = place.ty(&self.body.local_decls, self.tcx).ty;
@@ -228,7 +228,7 @@ impl<'tcx> Visitor<'tcx> for UnsafetyChecker<'_, 'tcx> {
                             self.tcx.at(self.source_info.span),
                             self.param_env,
                         );
-                    if !nodrop {
+                    if mutate_condition!(!nodrop, 22) {
                         self.require_unsafe(
                             UnsafetyViolationKind::General,
                             UnsafetyViolationDetails::AssignToDroppingUnionField,
@@ -274,7 +274,7 @@ impl<'tcx> UnsafetyChecker<'_, 'tcx> {
         let update_entry = |this: &mut Self, hir_id, new_usage| {
             match this.used_unsafe_blocks.entry(hir_id) {
                 hash_map::Entry::Occupied(mut entry) => {
-                    if new_usage == SomeDisallowedInUnsafeFn {
+                    if mutate_condition!(new_usage == SomeDisallowedInUnsafeFn, 23) {
                         *entry.get_mut() = SomeDisallowedInUnsafeFn;
                     }
                 }
@@ -297,14 +297,14 @@ impl<'tcx> UnsafetyChecker<'_, 'tcx> {
                         bug!("`UnsafetyViolationKind::UnsafeFn` in an `Safe` context")
                     }
                 }
-                if !self.violations.contains(&violation) {
+                if mutate_condition!(!self.violations.contains(&violation), 24) {
                     self.violations.push(violation)
                 }
             }),
             // With the RFC 2585, no longer allow `unsafe` operations in `unsafe fn`s
             Safety::FnUnsafe => violations.into_iter().for_each(|&(mut violation)| {
                 violation.kind = UnsafetyViolationKind::UnsafeFn;
-                if !self.violations.contains(&violation) {
+                if mutate_condition!(!self.violations.contains(&violation), 25) {
                     self.violations.push(violation)
                 }
             }),
@@ -342,7 +342,7 @@ impl<'tcx> UnsafetyChecker<'_, 'tcx> {
                         if self.tcx.layout_scalar_valid_range(def.did())
                             != (Bound::Unbounded, Bound::Unbounded)
                         {
-                            let details = if is_mut_use {
+                            let details = if mutate_condition!(is_mut_use, 26) {
                                 UnsafetyViolationDetails::MutationOfLayoutConstrainedField
 
                             // Check `is_freeze` as late as possible to avoid cycle errors
@@ -370,7 +370,7 @@ impl<'tcx> UnsafetyChecker<'_, 'tcx> {
     fn check_target_features(&mut self, func_did: DefId) {
         // Unsafety isn't required on wasm targets. For more information see
         // the corresponding check in typeck/src/collect.rs
-        if self.tcx.sess.target.options.is_like_wasm {
+        if mutate_condition!(self.tcx.sess.target.options.is_like_wasm, 27) {
             return;
         }
 
@@ -379,7 +379,7 @@ impl<'tcx> UnsafetyChecker<'_, 'tcx> {
         let self_features = &self.tcx.body_codegen_attrs(self.body_did.to_def_id()).target_features;
 
         // Is `callee_features` a subset of `calling_features`?
-        if !callee_features.iter().all(|feature| self_features.contains(feature)) {
+        if mutate_condition!(!callee_features.iter().all(|feature| self_features.contains(feature)), 28) {
             self.require_unsafe(
                 UnsafetyViolationKind::General,
                 UnsafetyViolationDetails::CallToFunctionWith,
@@ -463,7 +463,7 @@ impl<'tcx> intravisit::Visitor<'tcx> for UnusedUnsafeVisitor<'_, 'tcx> {
         _s: rustc_span::Span,
         _id: HirId,
     ) {
-        if matches!(fk, intravisit::FnKind::Closure) {
+        if mutate_condition!(matches!(fk, intravisit::FnKind::Closure), 29) {
             self.visit_body(self.tcx.hir().body(b))
         }
     }
@@ -574,7 +574,7 @@ pub fn check_unsafety(tcx: TyCtxt<'_>, def_id: LocalDefId) {
     debug!("check_unsafety({:?})", def_id);
 
     // closures are handled by their parent fn.
-    if tcx.is_closure(def_id.to_def_id()) {
+    if mutate_condition!(tcx.is_closure(def_id.to_def_id()), 30) {
         return;
     }
 
@@ -585,7 +585,7 @@ pub fn check_unsafety(tcx: TyCtxt<'_>, def_id: LocalDefId) {
 
         // Report an error.
         let unsafe_fn_msg =
-            if unsafe_op_in_unsafe_fn_allowed(tcx, lint_root) { " function or" } else { "" };
+            if mutate_condition!(unsafe_op_in_unsafe_fn_allowed(tcx, lint_root), 31) { " function or" } else { "" };
 
         match kind {
             UnsafetyViolationKind::General => {

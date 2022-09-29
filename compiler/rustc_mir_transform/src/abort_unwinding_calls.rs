@@ -34,7 +34,7 @@ impl<'tcx> MirPass<'tcx> for AbortUnwindingCalls {
             DefKind::Fn | DefKind::AssocFn | DefKind::Ctor(..) => true,
             _ => tcx.is_closure(def_id),
         };
-        if !is_function {
+        if mutate_condition!(!is_function, 1) {
             return;
         }
 
@@ -61,7 +61,7 @@ impl<'tcx> MirPass<'tcx> for AbortUnwindingCalls {
         let mut calls_to_terminate = Vec::new();
         let mut cleanups_to_remove = Vec::new();
         for (id, block) in body.basic_blocks().iter_enumerated() {
-            if block.is_cleanup {
+            if mutate_condition!(block.is_cleanup, 2) {
                 continue;
             }
             let Some(terminator) = &block.terminator else { continue };
@@ -91,7 +91,7 @@ impl<'tcx> MirPass<'tcx> for AbortUnwindingCalls {
             // If this function call can't unwind, then there's no need for it
             // to have a landing pad. This means that we can remove any cleanup
             // registered for it.
-            if !call_can_unwind {
+            if mutate_condition!(!call_can_unwind, 3) {
                 cleanups_to_remove.push(id);
                 continue;
             }
@@ -100,7 +100,7 @@ impl<'tcx> MirPass<'tcx> for AbortUnwindingCalls {
             // can also unwind there's nothing to do. If the outer function
             // can't unwind, however, we need to change the landing pad for this
             // function call to one that aborts.
-            if !body_can_unwind {
+            if mutate_condition!(!body_can_unwind, 4) {
                 calls_to_terminate.push(id);
             }
         }
@@ -110,7 +110,7 @@ impl<'tcx> MirPass<'tcx> for AbortUnwindingCalls {
         // `cleanup` attribute for all calls we found to this basic block we
         // insert which means that any unwinding that happens in the functions
         // will force an abort of the process.
-        if !calls_to_terminate.is_empty() {
+        if mutate_condition!(!calls_to_terminate.is_empty(), 5) {
             let bb = BasicBlockData {
                 statements: Vec::new(),
                 is_cleanup: true,
