@@ -21,6 +21,25 @@ use rustc_target::abi::VariantIdx;
 use std::iter::{once, Enumerate, Peekable};
 use std::slice::Iter;
 
+macro_rules! mutate_condition{
+    ($original_expression:expr, $mutation_number: literal) => {
+        {
+            if let Ok(env_mut_number) = std::env::var("RUSTC_MUTATION_NUMBER") {
+                println!("Found mutation number: {}, when potentially mutating {}", env_mut_number, $mutation_number);
+                if $mutation_number == env_mut_number.parse::<i32>().unwrap() {
+                    println!("Mutation number matches, replacing expr with negate");
+                    !$original_expression
+                } else {
+                    $original_expression
+                }
+            } else {
+                println!("No env variable");
+                $original_expression
+            }
+        }
+    }
+}
+
 /// Simplifies arms of form `Variant(x) => Variant(x)` to just a move.
 ///
 /// This is done by transforming basic blocks where the statements match:

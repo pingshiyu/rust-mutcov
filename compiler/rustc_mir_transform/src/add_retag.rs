@@ -4,6 +4,10 @@
 //! of MIR building, and only after this pass we think of the program has having the
 //! normal MIR semantics.
 
+use crate::MirPass;
+use rustc_middle::mir::*;
+use rustc_middle::ty::{self, Ty, TyCtxt};
+
 macro_rules! mutate_condition{
     ($original_expression:expr, $mutation_number: literal) => {
         {
@@ -22,11 +26,6 @@ macro_rules! mutate_condition{
         }
     }
 }
-
-
-use crate::MirPass;
-use rustc_middle::mir::*;
-use rustc_middle::ty::{self, Ty, TyCtxt};
 
 pub struct AddRetag;
 

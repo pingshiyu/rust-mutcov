@@ -5,6 +5,25 @@ use rustc_middle::mir::tcx::PlaceTy;
 use rustc_middle::mir::{Body, LocalDecls, Place, StatementKind};
 use rustc_middle::ty::{self, Ty, TyCtxt};
 
+macro_rules! mutate_condition{
+    ($original_expression:expr, $mutation_number: literal) => {
+        {
+            if let Ok(env_mut_number) = std::env::var("RUSTC_MUTATION_NUMBER") {
+                println!("Found mutation number: {}, when potentially mutating {}", env_mut_number, $mutation_number);
+                if $mutation_number == env_mut_number.parse::<i32>().unwrap() {
+                    println!("Mutation number matches, replacing expr with negate");
+                    !$original_expression
+                } else {
+                    $original_expression
+                }
+            } else {
+                println!("No env variable");
+                $original_expression
+            }
+        }
+    }
+}
+
 pub struct RemoveZsts;
 
 impl<'tcx> MirPass<'tcx> for RemoveZsts {
