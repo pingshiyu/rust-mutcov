@@ -46,7 +46,7 @@ impl<'tcx> MirPass<'tcx> for MultipleReturnTerminators {
         }
 
         for bb in bbs {
-            if mutate_condition!(!tcx.consider_optimizing(|| format!("MultipleReturnTerminators, 253) {:?} ", def_id)) {
+            if mutate_condition!(!tcx.consider_optimizing(|| format!("MultipleReturnTerminators {:?} ", def_id)), 253) {
                 break;
             }
 

@@ -4,25 +4,6 @@ use rustc_middle::ty::TyCtxt;
 
 use std::borrow::Cow;
 
-macro_rules! mutate_condition{
-    ($original_expression:expr, $mutation_number: literal) => {
-        {
-            if let Ok(env_mut_number) = std::env::var("RUSTC_MUTATION_NUMBER") {
-                println!("Found mutation number: {}, when potentially mutating {}", env_mut_number, $mutation_number);
-                if $mutation_number == env_mut_number.parse::<i32>().unwrap() {
-                    println!("Mutation number matches, replacing expr with negate");
-                    !$original_expression
-                } else {
-                    $original_expression
-                }
-            } else {
-                println!("No env variable");
-                $original_expression
-            }
-        }
-    }
-}
-
 /// A pass that replaces a branch with a goto when its condition is known.
 pub struct SimplifyConstCondition {
     label: String,
@@ -61,7 +42,7 @@ impl<'tcx> MirPass<'tcx> for SimplifyConstCondition {
                 TerminatorKind::Assert {
                     target, cond: Operand::Constant(ref c), expected, ..
                 } => match c.literal.try_eval_bool(tcx, param_env) {
-                    Some(v) if mutate_condition!(v == expected => TerminatorKind::Goto, 370) { target },
+                    Some(v) if v == expected => TerminatorKind::Goto { target },
                     _ => continue,
                 },
                 _ => continue,

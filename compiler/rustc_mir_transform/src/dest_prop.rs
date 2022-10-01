@@ -203,7 +203,7 @@ impl<'tcx> MirPass<'tcx> for DestinationPropagation {
                 continue;
             }
 
-            if mutate_condition!(!tcx.consider_optimizing(||, 107) {
+            if !tcx.consider_optimizing(|| {
                 format!("DestinationPropagation {:?} {:?}", def_id, candidate)
             }) {
                 break;
@@ -412,14 +412,14 @@ impl<'a> Conflicts<'a> {
             let reachable = reachable.get_or_insert_with(|| traversal::reachable_as_bitset(body));
 
             match pass_where {
-                PassWhere::BeforeLocation(loc) if mutate_condition!(reachable.contains(loc.block) =>, 110) {
+                PassWhere::BeforeLocation(loc) if reachable.contains(loc.block) => {
                     init.seek_before_primary_effect(loc);
                     live.seek_after_primary_effect(loc);
 
                     writeln!(w, "        // init: {:?}", init.get())?;
                     writeln!(w, "        // live: {:?}", live.get())?;
                 }
-                PassWhere::AfterTerminator(bb) if mutate_condition!(reachable.contains(bb) =>, 111) {
+                PassWhere::AfterTerminator(bb) if reachable.contains(bb) => {
                     let loc = body.terminator_loc(bb);
                     init.seek_after_primary_effect(loc);
                     live.seek_before_primary_effect(loc);
@@ -428,7 +428,7 @@ impl<'a> Conflicts<'a> {
                     writeln!(w, "        // live: {:?}", live.get())?;
                 }
 
-                PassWhere::BeforeBlock(bb) if mutate_condition!(reachable.contains(bb) =>, 112) {
+                PassWhere::BeforeBlock(bb) if reachable.contains(bb) => {
                     init.seek_to_block_start(bb);
                     live.seek_to_block_start(bb);
 

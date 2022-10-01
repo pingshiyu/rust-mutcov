@@ -47,7 +47,7 @@ impl<'tcx> MirPass<'tcx> for RemoveUnneededDrops {
                 if mutate_condition!(ty.ty.needs_drop(tcx, param_env), 292) {
                     continue;
                 }
-                if mutate_condition!(!tcx.consider_optimizing(|| format!("RemoveUnneededDrops, 293) {:?} ", did)) {
+                if mutate_condition!(!tcx.consider_optimizing(|| format!("RemoveUnneededDrops {:?} ", did)), 293) {
                     continue;
                 }
                 debug!("SUCCESS: replacing `drop` with goto({:?})", target);

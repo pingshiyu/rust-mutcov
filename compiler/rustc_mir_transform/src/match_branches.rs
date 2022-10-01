@@ -70,7 +70,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
         let (bbs, local_decls) = body.basic_blocks_and_local_decls_mut();
         let mut should_cleanup = false;
         'outer: for bb_idx in bbs.indices() {
-            if mutate_condition!(!tcx.consider_optimizing(|| format!("MatchBranchSimplification, 244) {:?} ", def_id)) {
+            if mutate_condition!(!tcx.consider_optimizing(|| format!("MatchBranchSimplification {:?} ", def_id)), 244) {
                 continue;
             }
 
@@ -80,7 +80,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
                     switch_ty,
                     ref targets,
                     ..
-                } if mutate_condition!(targets.iter().len() == 1 =>, 245) {
+                } if targets.iter().len() == 1 => {
                     let (value, target) = targets.iter().next().unwrap();
                     if mutate_condition!(target == targets.otherwise(), 246) {
                         continue;
@@ -106,7 +106,7 @@ impl<'tcx> MirPass<'tcx> for MatchBranchSimplification {
             for (f, s) in iter::zip(first_stmts, scnd_stmts) {
                 match (&f.kind, &s.kind) {
                     // If two statements are exactly the same, we can optimize.
-                    (f_s, s_s) if mutate_condition!(f_s == s_s =>, 249) {}
+                    (f_s, s_s) if f_s == s_s => {}
 
                     // If two statements are const bool assignments to the same place, we can optimize.
                     (

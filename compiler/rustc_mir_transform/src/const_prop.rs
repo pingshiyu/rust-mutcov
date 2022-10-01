@@ -505,7 +505,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
     }
 
     fn check_unary_op(&mut self, op: UnOp, arg: &Operand<'tcx>) -> Option<()> {
-        if mutate_condition!(self.use_ecx(|this|, 50) {
+        if self.use_ecx(|this| {
             let val = this.ecx.read_immediate(&this.ecx.eval_operand(arg, None)?)?;
             let (_res, overflow, _ty) = this.ecx.overflowing_unary_op(op, &val)?;
             Ok(overflow)
@@ -544,7 +544,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
 
         if let (Some(l), Some(r)) = (&l, &r) {
             // The remaining operators are handled through `overflowing_binary_op`.
-            if mutate_condition!(self.use_ecx(|this|, 53) {
+            if self.use_ecx(|this| {
                 let (_res, overflow, _ty) = this.ecx.overflowing_binary_op(op, l, r)?;
                 Ok(overflow)
             })? {
@@ -683,7 +683,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
                     {
                         this.ecx.write_immediate(*const_arg, &dest)
                     }
-                    BinOp::Mul if mutate_condition!(const_arg.layout.ty.is_integral() && arg_value == 0 =>, 56) {
+                    BinOp::Mul if const_arg.layout.ty.is_integral() && arg_value == 0 => {
                         if let Rvalue::CheckedBinaryOp(_, _) = rvalue {
                             let val = Immediate::ScalarPair(
                                 const_arg.to_scalar()?.into(),
@@ -718,7 +718,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
     ) {
         if let Rvalue::Use(Operand::Constant(c)) = rval {
             match c.literal {
-                ConstantKind::Ty(c) if mutate_condition!(matches!(c.val(), ConstKind::Unevaluated(..)) =>, 57) {}
+                ConstantKind::Ty(c) if matches!(c.val(), ConstKind::Unevaluated(..)) => {}
                 _ => {
                     trace!("skipping replace of Rvalue::Use({:?} because it is already a const", c);
                     return;
@@ -818,7 +818,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
             return false;
         }
 
-        if mutate_condition!(!self.tcx.consider_optimizing(|| format!("ConstantPropagation - OpTy:, 60) {:?}", op)) {
+        if mutate_condition!(!self.tcx.consider_optimizing(|| format!("ConstantPropagation - OpTy: {:?}", op)), 60) {
             return false;
         }
 
@@ -875,7 +875,7 @@ impl CanConstProp {
         for (local, val) in cpv.can_const_prop.iter_enumerated_mut() {
             let ty = body.local_decls[local].ty;
             match tcx.layout_of(param_env.and(ty)) {
-                Ok(layout) if mutate_condition!(layout.size < Size::from_bytes(MAX_ALLOC_LIMIT) =>, 61) {}
+                Ok(layout) if layout.size < Size::from_bytes(MAX_ALLOC_LIMIT) => {}
                 // Either the layout fails to compute, then we can't use this local anyway
                 // or the local is too large, then we don't want to.
                 _ => {

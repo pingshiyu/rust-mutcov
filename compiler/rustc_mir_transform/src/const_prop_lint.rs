@@ -621,7 +621,7 @@ impl<'mir, 'tcx> ConstPropagator<'mir, 'tcx> {
 
         if let (Some(l), Some(r)) = (&l, &r) {
             // The remaining operators are handled through `overflowing_binary_op`.
-            if mutate_condition!(self.use_ecx(|this|, 86) {
+            if self.use_ecx(|this| {
                 let (_res, overflow, _ty) = this.ecx.overflowing_binary_op(op, l, r)?;
                 Ok(overflow)
             })? {
@@ -753,7 +753,7 @@ impl CanConstProp {
         for (local, val) in cpv.can_const_prop.iter_enumerated_mut() {
             let ty = body.local_decls[local].ty;
             match tcx.layout_of(param_env.and(ty)) {
-                Ok(layout) if mutate_condition!(layout.size < Size::from_bytes(MAX_ALLOC_LIMIT) =>, 88) {}
+                Ok(layout) if layout.size < Size::from_bytes(MAX_ALLOC_LIMIT) => {}
                 // Either the layout fails to compute, then we can't use this local anyway
                 // or the local is too large, then we don't want to.
                 _ => {

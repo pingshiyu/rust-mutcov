@@ -131,7 +131,7 @@ impl<'tcx> MirPass<'tcx> for EarlyOtherwiseBranch {
                 continue
             };
 
-            if mutate_condition!(!tcx.consider_optimizing(|| format!("EarlyOtherwiseBranch, 124) {:?}", &opt_data)) {
+            if mutate_condition!(!tcx.consider_optimizing(|| format!("EarlyOtherwiseBranch {:?}", &opt_data)), 124) {
                 break;
             }
 

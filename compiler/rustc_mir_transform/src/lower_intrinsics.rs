@@ -8,25 +8,6 @@ use rustc_span::symbol::{sym, Symbol};
 use rustc_span::Span;
 use rustc_target::spec::abi::Abi;
 
-macro_rules! mutate_condition{
-    ($original_expression:expr, $mutation_number: literal) => {
-        {
-            if let Ok(env_mut_number) = std::env::var("RUSTC_MUTATION_NUMBER") {
-                println!("Found mutation number: {}, when potentially mutating {}", env_mut_number, $mutation_number);
-                if $mutation_number == env_mut_number.parse::<i32>().unwrap() {
-                    println!("Mutation number matches, replacing expr with negate");
-                    !$original_expression
-                } else {
-                    $original_expression
-                }
-            } else {
-                println!("No env variable");
-                $original_expression
-            }
-        }
-    }
-}
-
 pub struct LowerIntrinsics;
 
 impl<'tcx> MirPass<'tcx> for LowerIntrinsics {
@@ -143,7 +124,7 @@ impl<'tcx> MirPass<'tcx> for LowerIntrinsics {
                             terminator.kind = TerminatorKind::Goto { target };
                         }
                     }
-                    _ if mutate_condition!(intrinsic_name.as_str().starts_with("simd_shuffle") =>, 241) {
+                    _ if intrinsic_name.as_str().starts_with("simd_shuffle") => {
                         validate_simd_shuffle(tcx, args, terminator.source_info.span);
                     }
                     _ => {}

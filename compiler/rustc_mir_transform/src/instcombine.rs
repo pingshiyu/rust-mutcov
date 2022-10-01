@@ -196,7 +196,7 @@ impl<'tcx> InstCombineContext<'tcx, '_> {
             return;
         }
 
-        if mutate_condition!(!self.tcx.consider_optimizing(||, 231) {
+        if !self.tcx.consider_optimizing(|| {
             format!(
                 "InstCombine - Call: {:?} SourceInfo: {:?}",
                 (fn_def_id, fn_substs),

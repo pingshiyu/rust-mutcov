@@ -754,7 +754,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
             }
 
             match rhs {
-                Rvalue::Use(operand) if mutate_condition!(operand.place() == Some(adt_matched_on) =>, 366) {
+                Rvalue::Use(operand) if operand.place() == Some(adt_matched_on) => {
                     StatementEquality::ConsideredEqual(side_to_choose)
                 }
                 _ => {
@@ -775,7 +775,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
             (
                 StatementKind::Assign(box (_, rhs)),
                 &StatementKind::SetDiscriminant { ref place, variant_index },
-            ) if mutate_condition!(y_target_and_value.value.is_some() =>, 367) {
+            ) if y_target_and_value.value.is_some() => {
                 // choose basic block of x, as that has the assign
                 helper(
                     rhs,
@@ -788,7 +788,7 @@ impl<'tcx> SimplifyBranchSameOptimizationFinder<'_, 'tcx> {
             (
                 &StatementKind::SetDiscriminant { ref place, variant_index },
                 &StatementKind::Assign(box (_, ref rhs)),
-            ) if mutate_condition!(x_target_and_value.value.is_some() =>, 368) {
+            ) if x_target_and_value.value.is_some() => {
                 // choose basic block of y, as that has the assign
                 helper(
                     rhs,

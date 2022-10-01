@@ -170,7 +170,7 @@ impl<'tcx> Inliner<'tcx> {
         let callee_body = self.tcx.instance_mir(callsite.callee.def);
         self.check_mir_body(callsite, callee_body, callee_attrs)?;
 
-        if mutate_condition!(!self.tcx.consider_optimizing(||, 182) {
+        if !self.tcx.consider_optimizing(|| {
             format!("Inline {:?} into {:?}", callsite.callee, caller_body.source)
         }) {
             return Err("optimization fuel exhausted");

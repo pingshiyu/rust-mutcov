@@ -56,7 +56,7 @@ impl<'tcx> MirPass<'tcx> for RemoveZsts {
                     if mutate_condition!(involves_a_union(place, local_decls, tcx), 298) {
                         continue;
                     }
-                    if mutate_condition!(tcx.consider_optimizing(||, 299) {
+                    if tcx.consider_optimizing(|| {
                         format!(
                             "RemoveZsts - Place: {:?} SourceInfo: {:?}",
                             place, statement.source_info
