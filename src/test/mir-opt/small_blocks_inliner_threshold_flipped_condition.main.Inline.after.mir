@@ -1,0 +1,96 @@
+// MIR for `main` after Inline
+
+fn main() -> () {
+    let mut _0: ();                      // return place in scope 0 at test-case.rs:3:11: 3:11
+    let mut _1: std::collections::hash_map::DefaultHasher; // in scope 0 at test-case.rs:4:7: 4:12
+    let mut _3: &str;                    // in scope 0 at test-case.rs:6:3: 6:13
+    let _4: &str;                        // in scope 0 at test-case.rs:6:3: 6:5
+    let mut _5: &mut std::collections::hash_map::DefaultHasher; // in scope 0 at test-case.rs:6:11: 6:12
+    scope 1 {
+        debug a => _1;                   // in scope 1 at test-case.rs:4:7: 4:12
+        let _2: &mut std::collections::hash_map::DefaultHasher; // in scope 1 at test-case.rs:5:7: 5:8
+        scope 2 {
+            debug b => _2;               // in scope 2 at test-case.rs:5:7: 5:8
+            scope 3 (inlined hash::impls::<impl Hash for str>::hash::<DefaultHasher>) { // at test-case.rs:6:3: 6:13
+                debug self => _3;        // in scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:863:28: 863:33
+                debug state => _5;       // in scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:863:35: 863:40
+                let _6: ();              // in scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:13: 864:34
+                let mut _7: &mut std::collections::hash_map::DefaultHasher; // in scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:13: 864:34
+                let mut _8: &str;        // in scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:29: 864:33
+                scope 4 (inlined <DefaultHasher as Hasher>::write_str) { // at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:13: 864:34
+                    debug self => _7;    // in scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3018:18: 3018:27
+                    debug s => _8;       // in scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3018:29: 3018:30
+                    let _9: ();          // in scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:9: 3019:28
+                    let mut _10: &mut std::hash::SipHasher13; // in scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:9: 3019:28
+                    let mut _11: &str;   // in scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:26: 3019:27
+                    scope 5 (inlined <SipHasher13 as Hasher>::write_str) { // at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:9: 3019:28
+                        debug self => _10; // in scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:246:18: 246:27
+                        debug s => _11;  // in scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:246:29: 246:30
+                        let _12: ();     // in scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:9: 247:33
+                        let mut _13: &mut std::hash::sip::Hasher<std::hash::sip::Sip13Rounds>; // in scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:9: 247:33
+                        let mut _14: &str; // in scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:31: 247:32
+                    }
+                }
+            }
+        }
+    }
+
+    bb0: {
+        StorageLive(_1);                 // scope 0 at test-case.rs:4:7: 4:12
+        _1 = DefaultHasher::new() -> bb1; // scope 0 at test-case.rs:4:15: 4:36
+                                         // mir::Constant
+                                         // + span: test-case.rs:4:15: 4:33
+                                         // + literal: Const { ty: fn() -> DefaultHasher {DefaultHasher::new}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        StorageLive(_2);                 // scope 1 at test-case.rs:5:7: 5:8
+        _2 = &mut _1;                    // scope 1 at test-case.rs:5:11: 5:17
+        StorageLive(_3);                 // scope 2 at test-case.rs:6:3: 6:13
+        StorageLive(_4);                 // scope 2 at test-case.rs:6:3: 6:5
+        _4 = const "";                   // scope 2 at test-case.rs:6:3: 6:5
+                                         // mir::Constant
+                                         // + span: test-case.rs:6:3: 6:5
+                                         // + literal: Const { ty: &str, val: Value(Slice(..)) }
+        _3 = &(*_4);                     // scope 2 at test-case.rs:6:3: 6:13
+        StorageLive(_5);                 // scope 2 at test-case.rs:6:11: 6:12
+        _5 = &mut (*_2);                 // scope 2 at test-case.rs:6:11: 6:12
+        StorageLive(_6);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:13: 864:34
+        StorageLive(_7);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:13: 864:34
+        _7 = &mut (*_5);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:13: 864:34
+        StorageLive(_8);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:29: 864:33
+        _8 = _3;                         // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:29: 864:33
+        StorageLive(_9);                 // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:9: 3019:28
+        StorageLive(_10);                // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:9: 3019:28
+        _10 = &mut ((*_7).0: std::hash::SipHasher13); // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:9: 3019:28
+        StorageLive(_11);                // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:26: 3019:27
+        _11 = _8;                        // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:26: 3019:27
+        StorageLive(_12);                // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:9: 247:33
+        StorageLive(_13);                // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:9: 247:33
+        _13 = &mut ((*_10).0: std::hash::sip::Hasher<std::hash::sip::Sip13Rounds>); // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:9: 247:33
+        StorageLive(_14);                // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:31: 247:32
+        _14 = _11;                       // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:31: 247:32
+        _12 = <hash::sip::Hasher<hash::sip::Sip13Rounds> as Hasher>::write_str(move _13, move _14) -> bb2; // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:9: 247:33
+                                         // mir::Constant
+                                         // + span: /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:21: 247:30
+                                         // + literal: Const { ty: for<'r, 's> fn(&'r mut hash::sip::Hasher<hash::sip::Sip13Rounds>, &'s str) {<hash::sip::Hasher<hash::sip::Sip13Rounds> as Hasher>::write_str}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb2: {
+        StorageDead(_14);                // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:32: 247:33
+        StorageDead(_13);                // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:32: 247:33
+        StorageDead(_12);                // scope 5 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/sip.rs:247:33: 247:34
+        StorageDead(_11);                // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:27: 3019:28
+        StorageDead(_10);                // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:27: 3019:28
+        StorageDead(_9);                 // scope 4 at /home/jacob/projects/rustsmith/rust-mutcov/library/std/src/collections/hash/map.rs:3019:28: 3019:29
+        StorageDead(_8);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:33: 864:34
+        StorageDead(_7);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:33: 864:34
+        StorageDead(_6);                 // scope 3 at /home/jacob/projects/rustsmith/rust-mutcov/library/core/src/hash/mod.rs:864:34: 864:35
+        StorageDead(_5);                 // scope 2 at test-case.rs:6:12: 6:13
+        StorageDead(_3);                 // scope 2 at test-case.rs:6:12: 6:13
+        StorageDead(_2);                 // scope 1 at test-case.rs:7:1: 7:2
+        StorageDead(_1);                 // scope 0 at test-case.rs:7:1: 7:2
+        StorageDead(_4);                 // scope 0 at test-case.rs:7:1: 7:2
+        return;                          // scope 0 at test-case.rs:7:2: 7:2
+    }
+}
