@@ -2,9 +2,20 @@
 
 ## Instructions for computing coverage of Rust test suite
 - This repository has been set up with the correct `config.toml` and coverage instrumentation in `builder.rs`.
-- `./x.py build`
-- This will generate a `default.profraw` file in `$PWD`.
-- 
+- Build Rust:
+   - `./x.py build`
+- For OOTS:
+   - Generate `.profraw` files, for all tests in `mir-opt`, containing coverage information
+      - `LLVM_PROFILE_FILE="coverage/oots/%p-%m.profraw" ./x.py test src/test/mir-opt --force-rerun`
+   - Generate coverage `html` files
+      - `grcov coverage/oots/*.profraw -s compiler -b /home/jacob/projects/rustsmith/rust-mutcov/build/x86_64-unknown-linux-gnu --llvm-path /home/jacob/projects/rustsmith/rust-mutcov/build/x86_64-unknown-linux-gnu/llvm/bin -t html -o coverage/oots/_html`
+- For RustSmith:
+   - Generate 1000 programs:
+      - `../rustsmith/bin/rustsmith -n 1000 --directory coverage/rustsmith/files`
+   - Compile generated programs to generate `.profraw` files:
+      - `LLVM_PROFILE_FILE="coverage/rustsmith/%p-%m.profraw" python compile_rustsmith_files.py`
+   - Generate coverage `html` files
+      - `grcov coverage/rustsmith/*.profraw -s compiler -b /home/jacob/projects/rustsmith/rust-mutcov/build/x86_64-unknown-linux-gnu --llvm-path /home/jacob/projects/rustsmith/rust-mutcov/build/x86_64-unknown-linux-gnu/llvm/bin -t html -o coverage/rustsmith/_html`
 
 ## Old Rust README.md contents:
 
