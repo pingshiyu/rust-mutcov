@@ -1120,6 +1120,11 @@ impl<'a> Builder<'a> {
             }
         }
 
+        if mode != Mode::Std {
+            rustflags.arg("-Cinstrument-coverage");
+            rustflags.arg("-Zprofile");
+        }
+
         let use_new_symbol_mangling = match self.config.rust_new_symbol_mangling {
             Some(setting) => {
                 // If an explicit setting is given, use that

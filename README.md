@@ -1,4 +1,12 @@
-# The Rust Programming Language
+# The Rust Programming Language (Coverage for RustSmith Tools Paper)
+
+## Instructions for computing coverage of Rust test suite
+- This repository has been set up with the correct `config.toml` and coverage instrumentation in `builder.rs`.
+- `./x.py build`
+- This will generate a `default.profraw` file in `$PWD`.
+- 
+
+## Old Rust README.md contents:
 
 This is the main source code repository for [Rust]. It contains the compiler,
 standard library, and documentation.
