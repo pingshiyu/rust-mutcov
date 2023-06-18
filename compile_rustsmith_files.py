@@ -2,7 +2,7 @@ import subprocess
 from pathlib import Path
 from multiprocessing import Pool
 
-RUST_PATH = "/home/jacob/projects/rustsmith/rust-mutcov/build/x86_64-unknown-linux-gnu/stage1/bin/rustc"
+RUST_PATH = "/app/code-coverage/build/x86_64-unknown-linux-gnu/stage1/bin/rustc"
 ROOT = Path("./coverage/rustsmith/files")
 TIMEOUT_SECONDS = 60
 JOBS=8
